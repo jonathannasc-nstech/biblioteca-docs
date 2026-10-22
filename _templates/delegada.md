@@ -2,7 +2,7 @@
 number: NN
 type: delegada
 status: in_progress
-repo: gbm-app-exemplo-backend gbm-mfe-exemplo
+repo: meu-app-backend meu-app-frontend
 task: 000000
 function: Resumo de uma linha do problema/demanda
 titulo_busca: Titulo curto com palavras-chave
@@ -13,7 +13,7 @@ delegada_em: YYYY-MM-DD
 related:
   - reqs/000000-slug.md
 updated: YYYY-MM-DD
-author: Jonathan Nascimento
+author: —
 ---
 # 000000: Titulo curto
 
@@ -22,7 +22,7 @@ author: Jonathan Nascimento
 | Campo | Valor |
 |---|---|
 | Tela | Módulo > Página > Aba |
-| Repo | `gbm-app-exemplo-backend` (back) + `gbm-mfe-exemplo` (front) |
+| Repo | `meu-app-backend` (back) + `meu-app-frontend` (front) |
 | Causa provável | O que o código faz hoje e por que gera o problema — com nomes reais de arquivo/função/campo |
 | Atenção | Riscos, decisões pendentes com o PO, spec obrigatória, efeito colateral |
 | Dificuldade | Baixa a média (2-4h) |

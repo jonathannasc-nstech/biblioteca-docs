@@ -30,8 +30,7 @@ Por que trocou do `wkhtmltopdf` (WebKit de 2012):
 `weasyprint` segue descartado: falha ao carregar `libgobject` no Windows
 mesmo com o runtime GTK3 oficial (testado em 2026-09-11, 2 instaladores).
 
-Versão anterior (wkhtmltopdf) no histórico git da Biblioteca e em
-`Documents\Prints Claude\backup-pdf-export-2026-10-07\`.
+Versão anterior (wkhtmltopdf) no histórico git da Biblioteca.
 
 ## Dependências — não checar antes de converter
 
@@ -53,7 +52,7 @@ não é escaneada pelo `sync-all.ps1`.
 
 ```
 (motor: Edge headless)
-OK: C:\...\exportacoes\108364-classification-metrics-reativacao.pdf
+OK: C:\...\exportacoes\108364-metricas-reativacao.pdf
 ```
 
 ## Opções por documento (frontmatter)

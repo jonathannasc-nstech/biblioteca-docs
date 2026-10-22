@@ -1,13 +1,13 @@
 # Descobre PRs dos devs do time pra cada task delegada ativa - busca no
 # GitHub PR do login do dev que cite o id da task (titulo/corpo; o template
-# de PR GBM tem a secao "Referencia Azure DevOps"):
+# de PR costuma citar o work item, ex.: secao "Referencia Azure DevOps"):
 #   gh search prs <taskId> --author <login> --owner <githubOrg>
 # URL nova vai pra secao "## PRs" do doc + `pr_pending`. Nao classifica
 # estado aqui: o sweep normal do build-dashboard.ps1 (dentro do sync-all
 # rodado no fim) ja resolve merged/closed na mesma rodada e fecha a
 # delegada (status: completed) quando todos os PRs dela mergeiam.
 #
-# Botao "Buscar PRs" do time.html, ou a skill gbm-delegar-task.
+# Botao "Buscar PRs" do time.html, ou a skill delegar-task.
 # ponytail: 1 chamada de rede por delegada ativa - ok pra dezenas; se o time
 # crescer muito, trocar por 1 `gh search prs --author` por dev e casar o id local.
 

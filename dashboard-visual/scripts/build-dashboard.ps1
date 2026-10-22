@@ -19,7 +19,7 @@ $libScript = Join-Path $libRoot 'scripts\lib-doc.ps1'
 
 $root = Get-LibRoot
 # -ParsedDocs vem de sync-all.ps1 (parse compartilhado); sem ele (rodando
-# este script solo, como faz task-hub-complete/qa), parseia por conta
+# este script solo, como faz task-hub-qa), parseia por conta
 # propria - ver lint-clusters.ps1.
 $parsedDocs = if ($ParsedDocs) { $ParsedDocs } else { Get-ParsedDocs $root }
 $typeOrder = @{ 'task-code' = 0; 'task-planning' = 1; 'testes' = 2; 'handover-tecnico' = 3 }
@@ -236,8 +236,8 @@ $mockIcon = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke=
 
 # Icones do "tipo de repo" do PR (backend/frontend/migration) - trocam o
 # $githubIcon generico no pill de PR, inferido do nome do repo na propria
-# URL (convencao GBM: sufixo -backend, prefixo mfe-/mobile-, ou
-# gbm-app-migrations). "PR #N" no texto ja diz que e' PR - o icone generico
+# URL (sufixo -backend, prefixo [org-]mfe-/mobile-, ou nome com
+# "migrations"). "PR #N" no texto ja diz que e' PR - o icone generico
 # do github era redundante; agora carrega informacao nova.
 $backendIcon = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="4.5" rx="1"/><rect x="2" y="9.5" width="12" height="4.5" rx="1"/><circle cx="4.3" cy="4.25" r="0.55" fill="currentColor" stroke="none"/><circle cx="4.3" cy="11.75" r="0.55" fill="currentColor" stroke="none"/></svg>'
 $frontendIcon = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="9" rx="1"/><path d="M6 14.5h4M8 11.5v3"/></svg>'
@@ -261,8 +261,8 @@ function Get-TaskSiblings([PSCustomObject]$card) {
     return $siblings
 }
 
-# Classifica um nome de repo pela convencao GBM (sufixo -backend, prefixo
-# mfe-/mobile-, ou "migrations") - fonte unica usada tanto pelo icone do PR
+# Classifica um nome de repo pela convencao de nome (sufixo -backend, prefixo
+# [org-]mfe-/mobile-, ou "migrations") - fonte unica usada tanto pelo icone do PR
 # (Get-PrKindInfo) quanto pelo rotulo curto de camada no titulo do card
 # (Build-Card/Build-SummaryHtml, taskLabel). $null se o nome nao bater com
 # nenhuma convencao conhecida (repo pessoal, nome atipico etc.).
@@ -270,7 +270,7 @@ function Get-RepoLayer([string]$repo) {
     if (-not $repo) { return $null }
     if ($repo -match '-backend$') { return 'backend' }
     if ($repo -match 'migrations') { return 'migrations' }
-    if ($repo -match '^(gbm-)?(mfe|mobile)-') { return 'frontend' }
+    if ($repo -match '^([^-]+-)?(mfe|mobile)-') { return 'frontend' }
     return $null
 }
 $script:RepoLayerLabels = @{ backend = 'Backend'; frontend = 'Frontend'; migrations = 'Migrations' }
@@ -553,9 +553,11 @@ if ($bibConfig.reposBasePath -and (Test-Path $bibConfig.reposBasePath)) {
     }
 }
 
-$knownRepos = @($knownRepos | Where-Object { $_ -match '^[A-Za-z0-9._-]+$' } |
-    ForEach-Object { Get-RepoSortKey $_ } |
-    Sort-Object Bucket, DomainRank, Domain, SubOrder, Name |
+# Primeiro caractere alfanumerico: pasta oculta (.claude, .vscode) em
+# reposBasePath nao e' repo.
+$knownRepos = @($knownRepos | Where-Object { $_ -match '^[A-Za-z0-9][A-Za-z0-9._-]*$' } |
+    ForEach-Object { Get-RepoSortKey $_ $bibConfig.reposAoFim $bibConfig.repoAliases } |
+    Sort-Object Bucket, Domain, SubOrder, Name |
     ForEach-Object { $_.Name })
 # "Biblioteca" nao mora em reposBasePath (e' a raiz do proprio repo da
 # Biblioteca, pasta irma de reposBasePath) - por isso nunca aparecia nesta
@@ -1606,7 +1608,7 @@ $sharedCss
   <div class="swatch-row"><span class="icon-sample">$chevronIcon Expandir/recolher card</span><code>.expand-btn</code></div>
   <div class="swatch-row"><span class="icon-sample">$backendIcon PR de backend (repo termina em -backend)</span><code>Get-PrKindInfo</code></div>
   <div class="swatch-row"><span class="icon-sample">$frontendIcon PR de frontend (repo mfe-/mobile-)</span><code>Get-PrKindInfo</code></div>
-  <div class="swatch-row"><span class="icon-sample">$migrationIcon PR de migration (gbm-app-migrations)</span><code>Get-PrKindInfo</code></div>
+  <div class="swatch-row"><span class="icon-sample">$migrationIcon PR de migration (repo com "migrations" no nome)</span><code>Get-PrKindInfo</code></div>
 </section>
 
 <section>
@@ -1735,13 +1737,18 @@ if (archiveSearch) {
 # do CLAUDE.md do usuario dispara sozinho, igual qualquer demanda digitada
 # nesse repo). Estatica (sem backend) - so compoe o texto, quem processa
 # e' o agente depois que a sessao abre. Reaproveita o mesmo mecanismo de
-# lancamento do biblioteca-cmd: (Get-LaunchUri) + copia pro clipboard como
+# lancamento do biblioteca-cmd-run: (Get-LaunchUri) + copia pro clipboard como
 # fallback, igual todo outro botao de acao.
 function Build-NovaTaskHtml() {
-    # $reposBasePathJs vem do escopo do script (calculado antes desta funcao
-    # ser chamada, perto do fim do arquivo) - mesmo padrao de closure que as
-    # outras Build-*Html usam pra $hubRoot/$faviconLink etc.
+    # $reposBasePathJs/$libRootJs vem do escopo do script (calculados antes
+    # desta funcao ser chamada, perto do fim do arquivo) - mesmo padrao de
+    # closure que as outras Build-*Html usam pra $hubRoot/$faviconLink etc.
+    # Nunca citar outra variavel do script num comentario dentro do here-
+    # string abaixo: ele interpola, e um nome de variavel em comentario JS
+    # despeja o conteudo dela na pagina (ja aconteceu - o JS inteiro do
+    # dashboard foi parar dentro do nova-task.html).
     $hubRootJs = $hubRoot.Replace('\', '\\')
+    $ntReposBaseJs = if ($reposBasePathJs) { $reposBasePathJs } else { $libRootJs }
 
     return @"
 <!doctype html>
@@ -1784,12 +1791,20 @@ $sharedCss
   .nt-desc-section textarea { flex: 1 1 auto; min-height: 200px; }
   .nt-prompt-section { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .nt-prompt-section textarea { flex: 1 1 auto; min-height: 200px; }
-  .nt-col-side .actions { flex-shrink: 0; margin-top: auto; padding-top: 14px; }
+  /* position:fixed, ancorado na borda da janela (nao da caixa) - usa o
+     vao vazio a direita do conteudo quando a janela e' mais larga que o
+     max-width do body, que e' o espaco livre que sobra do lado. */
+  .nt-rail {
+    position: fixed; right: 24px; bottom: 24px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    max-width: 220px;
+  }
   @media (max-width: 980px) {
     html, body { height: auto; }
     body { display: block; }
     .nt-grid { grid-template-columns: 1fr; }
     .nt-col-main, .nt-col-side { height: auto; }
+    .nt-rail { position: static; max-width: none; margin-top: 14px; }
   }
   .nt-section {
     background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
@@ -1825,7 +1840,7 @@ $sharedCss
     margin-top: 8px; min-height: 80px; font-family: ui-monospace, "SF Mono", monospace;
     font-size: 0.74rem; color: var(--text-dim);
   }
-  .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
   .claude-btn {
     background: var(--claude-bg); color: var(--claude-bright); border: 1px solid var(--claude-border);
     border-radius: 8px; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
@@ -1837,7 +1852,7 @@ $sharedCss
 <body>
 <a class="back" href="dashboard.html">&larr; Voltar ao dashboard</a>
 <h1>Nova Task</h1>
-<p class="sub">Preenche os campos - o prompt se monta sozinho na caixa ao lado, pode ajustar antes de abrir. "Abrir Claude" ja copia e tenta abrir direto na pasta do repositorio.</p>
+<p class="sub">Preenche os campos - o prompt se monta sozinho na caixa ao lado, pode ajustar antes de abrir. "Abrir Claude" ja copia e abre direto, sem precisar colar - na pasta do repositorio (ou na pasta geral, se ainda nao souber qual repo).</p>
 
 <div class="nt-grid">
   <div class="nt-col-main">
@@ -1858,6 +1873,7 @@ $sharedCss
 $knownReposOptionsHtml
       </datalist>
       <p class="hint" id="nt-path-hint"></p>
+      <p class="hint">Pode deixar em branco - abre na pasta geral de repositorios e o Claude descobre qual usar depois de ler o work item no Azure DevOps.</p>
     </section>
 
     <section class="nt-section nt-desc-section">
@@ -1871,17 +1887,18 @@ $knownReposOptionsHtml
     <section class="nt-section nt-prompt-section">
       <h2>Prompt (isso vai ser enviado pro Claude)</h2>
       <textarea id="nt-prompt" placeholder="Preencha os campos ao lado - o prompt aparece aqui sozinho."></textarea>
-      <p class="hint" id="nt-recalc-wrap" style="display:none">Editado manualmente - <a href="#" id="nt-recalc">recalcular a partir dos campos</a></p>
       <details>
         <summary>Comando bruto (powershell)</summary>
         <textarea id="nt-output" readonly placeholder="Aparece depois de clicar em Abrir Claude."></textarea>
       </details>
     </section>
+  </div>
+</div>
 
-    <p class="warn" id="nt-warn"></p>
-    <div class="actions">
-      <a class="claude-btn" id="nt-launch" href="#">Abrir Claude</a>
-    </div>
+<div class="nt-rail">
+  <p class="warn" id="nt-warn"></p>
+  <div class="actions">
+    <a class="claude-btn" id="nt-launch" href="#">Abrir Claude</a>
   </div>
 </div>
 
@@ -1893,19 +1910,17 @@ var repoEl = document.getElementById('nt-repo');
 var descEl = document.getElementById('nt-desc');
 var promptEl = document.getElementById('nt-prompt');
 var pathHint = document.getElementById('nt-path-hint');
-var recalcWrap = document.getElementById('nt-recalc-wrap');
 var warn = document.getElementById('nt-warn');
 var rawOutput = document.getElementById('nt-output');
 var launch = document.getElementById('nt-launch');
-var manualEdit = false;
-var syncing = false;
+var reposBase = '$ntReposBaseJs';
 
 // Sem skill dedicada - o prompt e' auto-suficiente: abre direto no repo e
-// usa o fluxo global de skills (gbm-triagem/criar-task-code/plano-acao)
-// que ja dispara sozinho por causa do CLAUDE.md do usuario. As instrucoes
-// de busca/confirmacao/historico vao dentro do proprio texto, nao numa
-// skill separada. Confirmacao do Azure e' objetiva (link + sim/nao), nao
-// um paragrafo aberto - e so acontece 1x, depois o REQ salvo vira a fonte.
+// manda seguir o fluxo de skills do CLAUDE.md do proprio usuario (seja
+// qual for). As instrucoes de busca/confirmacao/historico vao dentro do
+// proprio texto, nao numa skill separada. Confirmacao do Azure e' objetiva
+// (link + sim/nao), nao um paragrafo aberto - e so acontece 1x, depois o
+// REQ salvo vira a fonte.
 function buildPromptText() {
   var azure = azureEl.value.trim();
   var parent = parentEl.value.trim();
@@ -1914,52 +1929,44 @@ function buildPromptText() {
   if (!azure && !repo && !desc) { return ''; }
   var parts = [];
   parts.push('Nova demanda - Azure: ' + (azure || '(nao informado)') + (parent ? ' (parent: ' + parent + ')' : '') + '.');
-  parts.push('Repo: ' + (repo || '(nao informado)') + '. Se esta pasta nao for exatamente esse repositorio, mova-se (cd) pra pasta correta antes de seguir.');
+  if (repo) {
+    parts.push('Repo: ' + repo + '. Se esta pasta nao for exatamente esse repositorio, mova-se (cd) pra pasta correta antes de seguir.');
+  } else {
+    parts.push('Repo: nao informado - abriu na pasta geral de repositorios (' + reposBase + '). Depois de ler o work item (e o parent) via MCP azure-devops, descubra qual repositorio corresponde e mova-se (cd) pra pasta dele (' + reposBase + '\\<repo>) antes de gravar qualquer doc.');
+  }
   parts.push('Descricao: ' + (desc || '(nao informado)'));
   parts.push('Antes de gravar qualquer doc: busque REQ/parent via MCP azure-devops se estiver conectado (ferramenta wit_work_item, `$expand=relations pra achar o parent - nunca wit_work_item_write/wit_work_item_comment_write/wit_work_item_link_write/wit_backlog). Mostre o link do work item (e do parent, se achar) e peca uma confirmacao objetiva (sim/nao) se e esse mesmo - nao descreva tudo em texto solto, so o link + a pergunta.');
-  parts.push('So depois da confirmacao, grave o REQ (e o parent, se houver) em reqs/ na Biblioteca e siga o fluxo normal (gbm-triagem, criar-task-code, plano-acao). A partir dai, use o arquivo salvo como fonte - nao reconsulte o Azure ao vivo de novo pra essa mesma task.');
+  parts.push('So depois da confirmacao, grave o REQ (e o parent, se houver) em reqs/ na Biblioteca ($libRootJs) e siga o fluxo de skills do seu CLAUDE.md pra demanda nova (documentacao pela skill controle-documentacao). A partir dai, use o arquivo salvo como fonte - nao reconsulte o Azure ao vivo de novo pra essa mesma task.');
   parts.push('Ao terminar de gravar os docs (task-code/reqs/resumo), anexe uma entrada em ' + '$hubRootJs' + '\\historico-nova-task.md (cabecalho \'## {data/hora} - task {id|slug} ({repo})\' + bullets Azure/Parent/REQs confirmados/Docs gerados) antes de considerar concluido.');
   return parts.join('\n\n');
 }
 
-// "Biblioteca" nao mora em reposBasePath (e' a raiz do proprio repo da
-// Biblioteca) - mesmo caso especial do seletor "Abrir Claude" do header
-// (ver __LIB_ROOT_PATH__ no $foot). Repo em branco cai solto na pasta que
-// contem todos os repos, igual o header - nao bloqueia mais o lancamento.
+// "Biblioteca" nao mora em reposBasePath (e' a raiz do proprio repo) -
+// mesmo caso especial do seletor "Abrir Claude" do header. Repo em branco
+// cai solto na pasta que contem todos os repos.
 function getTargetPath(repo) {
-  if (repo.toLowerCase() === 'biblioteca') { return '$hubRootJs'; }
-  return repo ? ('$reposBasePathJs\\' + repo) : '$reposBasePathJs';
+  if (repo.toLowerCase() === 'biblioteca') { return '$libRootJs'; }
+  return repo ? (reposBase + '\\' + repo) : reposBase;
 }
 
 function updatePathHint() {
   var repo = repoEl.value.trim();
-  pathHint.textContent = 'Vai abrir em: ' + getTargetPath(repo);
+  pathHint.textContent = 'Vai abrir em: ' + (repo ? getTargetPath(repo) : (reposBase + ' (pasta geral - repositorio a definir)'));
 }
 
+// Sem trava de "edicao manual" - o prompt sempre reflete os campos ao
+// lado. Editar a caixa do prompt direto ainda funciona (o comando final
+// usa o texto dela), so' que qualquer mudanca nos campos reescreve por
+// cima - simples e previsivel.
 function regeneratePrompt() {
-  syncing = true;
   promptEl.value = buildPromptText();
-  syncing = false;
-  manualEdit = false;
-  recalcWrap.style.display = 'none';
 }
 
 [azureEl, parentEl, repoEl, descEl].forEach(function (el) {
   el.addEventListener('input', function () {
-    if (!manualEdit) { regeneratePrompt(); }
+    regeneratePrompt();
     updatePathHint();
   });
-});
-
-promptEl.addEventListener('input', function () {
-  if (syncing) { return; }
-  manualEdit = true;
-  recalcWrap.style.display = 'block';
-});
-
-document.getElementById('nt-recalc').addEventListener('click', function (e) {
-  e.preventDefault();
-  regeneratePrompt();
 });
 
 launch.addEventListener('click', function (e) {
@@ -2141,7 +2148,7 @@ pendBtn.addEventListener('click', function () {
 # ---------------------------------------------------------------------------
 # Pagina Time (time.html) - tasks delegadas pra outros devs do time, uma
 # coluna por dev. Fonte: docs `type: delegada` em delegadas/ (criados pela
-# skill pessoal gbm-delegar-task) + delegadas/devs.json (lista de devs,
+# skill de delegacao - config `delegarSkill`, default delegar-task) + delegadas/devs.json (lista de devs,
 # editada pelo botao "+ Dev" via scripts/time-dev.ps1 - nunca a mao pelo
 # agente). Feature opt-in: sem a pasta delegadas/ (export publico, clone
 # novo) nao gera pagina nem link no header.
@@ -2153,6 +2160,7 @@ $timeEnabled = Test-Path $delegadasDir
 # Analisar/revisar precisa ler codigo de varios repos - abre o Claude na
 # pasta que contem todos (reposBasePath), igual o "Abrir Claude" sem repo.
 $timeClaudeDir = if ($bibConfig.reposBasePath) { $bibConfig.reposBasePath } else { $root }
+$delegarSkill = $bibConfig.delegarSkill
 $teamIcon = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.3"/><path d="M1.8 13.5c.5-2.4 2.2-3.7 4.2-3.7s3.7 1.3 4.2 3.7"/><circle cx="11.3" cy="6.2" r="1.8"/><path d="M11.6 9.9c1.5.2 2.4 1.3 2.7 3"/></svg>'
 
 function Get-TimeDevs() {
@@ -2272,8 +2280,8 @@ function Build-DelegadaCard($d) {
     $openPrs = @($prs | Where-Object { -not (Test-PrClosed $d $_) })
     $btnsHtml = '<div class="btns"></div>'
     if ($openPrs.Count -gt 0) {
-        $cmd = Get-ClaudeCmd $timeClaudeDir "Use a skill gbm-delegar-task no modo revisar para os PRs: $($openPrs -join ' ') (task $($d.Task), delegada em $($d.Path))."
-        $btnsHtml = "<div class=`"btns`"><a class=`"copy-btn`" href=`"$(Esc (Get-LaunchUri $cmd -AutoRun))`" data-cmd=`"$(Esc $cmd)`">Revisar PR</a></div>"
+        $cmd = Get-ClaudeCmd $timeClaudeDir "Use a skill $delegarSkill no modo revisar para os PRs: $($openPrs -join ' ') (task $($d.Task), delegada em $($d.Path))."
+        $btnsHtml = "<div class=`"btns`"><a class=`"copy-btn`" href=`"$(Esc (Get-LaunchUri $cmd))`" data-cmd=`"$(Esc $cmd)`">Revisar PR</a></div>"
     }
 
     $updatedHtml = if ($d.Updated) { "<span class=`"updated`">Atualizado $(Esc (Format-DisplayDate $d.Updated))</span>" } else { '' }
@@ -2343,7 +2351,7 @@ function Build-TimeHtml() {
     $syncPrsCmd = "powershell -NoProfile -Command `"cd '$($scriptsDir.Replace("'", "''"))'; powershell -NoProfile -ExecutionPolicy Bypass -File .\delegadas-prs.ps1`""
     $removeRows = ($devs | ForEach-Object {
         $rmCmd = "powershell -NoProfile -Command `"cd '$($scriptsDir.Replace("'", "''"))'; powershell -NoProfile -ExecutionPolicy Bypass -File .\time-dev.ps1 -Remover '$($_.id)'`""
-        "<div class=`"rm-row`"><span>$(Esc $_.nome) <span class=`"dev-gh`">@$(Esc $_.github)</span></span><a class=`"copy-btn qa-btn`" href=`"$(Esc (Get-LaunchUri $rmCmd -AutoRun))`" data-cmd=`"$(Esc $rmCmd)`">Remover</a></div>"
+        "<div class=`"rm-row`"><span>$(Esc $_.nome) <span class=`"dev-gh`">@$(Esc $_.github)</span></span><a class=`"copy-btn qa-btn`" href=`"$(Esc (Get-LaunchUri $rmCmd))`" data-cmd=`"$(Esc $rmCmd)`">Remover</a></div>"
     }) -join "`n"
     $removeHtml = if ($removeRows) { "<h3>Remover</h3><p class=`"hint`">S&oacute; remove quem n&atilde;o tem task ativa (o script recusa e explica no terminal).</p>$removeRows" } else { '' }
     $timeClaudeDirJs = $timeClaudeDir.Replace('\', '\\')
@@ -2454,7 +2462,7 @@ $cardCss
   <div class="tools">
     <input id="search" type="text" placeholder="Buscar task, repo, assunto..." autocomplete="off">
     <button type="button" class="copy-btn" data-open="dlg-dev">+ Dev</button>
-    <a class="copy-btn" href="$(Esc (Get-LaunchUri $syncPrsCmd -AutoRun))" data-cmd="$(Esc $syncPrsCmd)" title="Procura no GitHub PRs dos devs que citam o id de cada task ativa">Buscar PRs</a>
+    <a class="copy-btn" href="$(Esc (Get-LaunchUri $syncPrsCmd))" data-cmd="$(Esc $syncPrsCmd)" title="Procura no GitHub PRs dos devs que citam o id de cada task ativa">Buscar PRs</a>
     <button type="button" class="copy-btn primary-link" data-open="dlg-review">Revisar PRs</button>
     <button type="button" class="claude-btn" data-open="dlg-analisar">+ Analisar tasks</button>
   </div>
@@ -2475,9 +2483,9 @@ $boardHtml
 
 <dialog class="tm-dialog" id="dlg-review">
   <h2>Revisar PRs de terceiros</h2>
-  <p class="hint">Cole o texto como veio - os links de PR s&atilde;o extra&iacute;dos sozinhos. Pra cada PR o Claude acha a task delegada na Biblioteca (pelo id na branch/t&iacute;tulo/corpo), usa a an&aacute;lise, o escopo e o REQ dela como refer&ecirc;ncia no gbm-pr-review e registra a rodada no doc da delegada.</p>
+  <p class="hint">Cole o texto como veio - os links de PR s&atilde;o extra&iacute;dos sozinhos. Pra cada PR o Claude acha a task delegada na Biblioteca (pelo id na branch/t&iacute;tulo/corpo), usa a an&aacute;lise, o escopo e o REQ dela como refer&ecirc;ncia na revis&atilde;o e registra a rodada no doc da delegada.</p>
   <label for="rv-links">PRs</label>
-  <textarea id="rv-links" placeholder="https://github.com/gbmtech/gbm-app-maritime-backend/pull/123"></textarea>
+  <textarea id="rv-links" placeholder="https://github.com/minha-org/meu-app-backend/pull/123"></textarea>
   <p class="warn" id="rv-warn"></p>
   <div class="tm-actions"><button type="button" class="copy-btn" data-close>Cancelar</button><a class="claude-btn" id="rv-launch" href="#">Abrir Claude</a></div>
 </dialog>
@@ -2539,7 +2547,7 @@ wireLaunch('an-launch', 'an-warn', function () {
   var items = lines('an-links');
   if (!items.length) { return { error: 'Cole pelo menos uma task.' }; }
   var notes = document.getElementById('an-notes').value.trim();
-  var prompt = 'Use a skill gbm-delegar-task no modo analisar para as tasks abaixo. Fluxo completo da skill: buscar REQ, Task Code e parent via MCP azure-devops (somente leitura, nunca ferramentas de escrita), investigar o codigo sem editar nada nem trocar de branch, montar a tabela de analise no chat e depois perguntar qual dev pegou cada task. Biblioteca: $libRootJsLocal\nTasks:\n' + items.join('\n') + (notes ? '\nObservacoes: ' + notes : '');
+  var prompt = 'Use a skill $delegarSkill no modo analisar para as tasks abaixo. Fluxo completo da skill: buscar REQ, Task Code e parent via MCP azure-devops (somente leitura, nunca ferramentas de escrita), investigar o codigo sem editar nada nem trocar de branch, montar a tabela de analise no chat e depois perguntar qual dev pegou cada task. Biblioteca: $libRootJsLocal\nTasks:\n' + items.join('\n') + (notes ? '\nObservacoes: ' + notes : '');
   return { cmd: claudeCmd('$timeClaudeDirJs', prompt) };
 });
 
@@ -2548,7 +2556,7 @@ wireLaunch('rv-launch', 'rv-warn', function () {
   var found = document.getElementById('rv-links').value.match(/https:\/\/github\.com\/[^\/\s]+\/[^\/\s]+\/pull\/\d+/g) || [];
   var items = found.filter(function (l, i) { return found.indexOf(l) === i; });
   if (!items.length) { return { error: 'Nenhum link de PR do GitHub encontrado no texto.' }; }
-  var prompt = 'Use a skill gbm-delegar-task no modo revisar para os PRs abaixo: para cada PR, localizar a task delegada em $libRootJsLocal\\delegadas, usar a analise, o escopo e o REQ dela como referencia no gbm-pr-review e registrar a rodada de review no doc da delegada.\nPRs:\n' + items.join('\n');
+  var prompt = 'Use a skill $delegarSkill no modo revisar para os PRs abaixo: para cada PR, localizar a task delegada em $libRootJsLocal\\delegadas, usar a analise, o escopo e o REQ dela como referencia na revisao e registrar a rodada de review no doc da delegada.\nPRs:\n' + items.join('\n');
   return { cmd: claudeCmd('$timeClaudeDirJs', prompt) };
 });
 
@@ -3119,7 +3127,7 @@ setInterval(function () { saveReloadState(); location.reload(); }, LIVE_RELOAD_M
 # Acesso rapido "Abrir Claude" - so aparece se reposBasePath estiver
 # configurado (sem ele nao ha path valido pra montar o comando). Repo
 # escolhido no navegador -> comando montado em JS no clique (ver $foot),
-# mesmo mecanismo biblioteca-cmd:/clipboard dos outros botoes.
+# mesmo mecanismo biblioteca-cmd-run:/clipboard dos outros botoes.
 $quickOpenHtml = ''
 $reposBasePathJs = if ($bibConfig.reposBasePath) { $bibConfig.reposBasePath.Replace('\', '\\') } else { '' }
 $libRootJs = $root.Replace('\', '\\')
@@ -3193,45 +3201,17 @@ $html = $head + $body + $foot
 $outPath = Join-Path $hubRoot 'dashboard.html'
 [System.IO.File]::WriteAllText($outPath, $html)
 
-# Redirect no caminho antigo (raiz/dashboard-visual/) - a reorganizacao de
-# 17/08/2026 moveu o dashboard pra dentro de _ferramenta/, mas favorito/
-# aba ja aberta no navegador continua apontando pro path velho. Sem isso,
-# quem nao atualizou o favorito acha que o dashboard "parou de mostrar"
-# coisa nova, quando na verdade esta olhando um arquivo/cache antigo.
-$legacyRedirect = @"
-<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=../_ferramenta/dashboard-visual/dashboard.html">
-<title>Biblioteca - redirecionando...</title>
-</head><body>
-<p>O dashboard mudou de lugar - redirecionando pra
-<a href="../_ferramenta/dashboard-visual/dashboard.html">_ferramenta/dashboard-visual/dashboard.html</a>.
-Atualize seu favorito.</p>
-<script>location.replace('../_ferramenta/dashboard-visual/dashboard.html');</script>
-</body></html>
-"@
-# Export publico e' flat: raiz/dashboard-visual/ E' o hub - sem esse guard
-# o redirect sobrescreve o proprio dashboard recem-gerado.
-$legacyDir = Join-Path $root 'dashboard-visual'
-if ([IO.Path]::GetFullPath($legacyDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($hubRoot).TrimEnd('\')) {
-    New-Item -ItemType Directory -Force -Path $legacyDir | Out-Null
-    [System.IO.File]::WriteAllText((Join-Path $legacyDir 'dashboard.html'), $legacyRedirect)
-}
-
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'paleta.html'), (Build-PaletteHtml))
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'archive.html'), (Build-ArchiveHtml))
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'pendencias.html'), (Build-PendenciasHtml))
 if ($timeEnabled) {
     [System.IO.File]::WriteAllText((Join-Path $hubRoot 'time.html'), (Build-TimeHtml))
 }
-# nova-task.html e' hand-tuned (CSS/layout ajustado interativamente com o
-# usuario) - so' cria se ainda nao existir (bootstrap), nunca sobrescreve
-# depois (mesmo padrao do historico-nova-task.md abaixo). Sobrescrever
-# sempre ja apagou ajustes de layout reais numa sessao anterior.
-$novaTaskPath = Join-Path $hubRoot 'nova-task.html'
-if (-not (Test-Path $novaTaskPath)) {
-    [System.IO.File]::WriteAllText($novaTaskPath, (Build-NovaTaskHtml))
-}
+# nova-task.html regenerado a cada sync, igual as outras paginas - o
+# layout ajustado a mao mora em Build-NovaTaskHtml, e repos/paths vem do
+# config (antes so' era criado 1x e congelava o path de quem gerou
+# primeiro - foi assim que o template publico saiu com path pessoal).
+[System.IO.File]::WriteAllText((Join-Path $hubRoot 'nova-task.html'), (Build-NovaTaskHtml))
 
 # Historico de criacao de tasks (o proprio agente anexa as entradas,
 # seguindo a instrucao embutida no prompt de nova-task.html - sem skill

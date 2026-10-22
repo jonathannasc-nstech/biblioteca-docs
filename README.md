@@ -75,11 +75,28 @@ Tipos, status, nomenclatura e estrutura completa:
 | `biblioteca-setup` | Cadastro guiado na primeira sessão |
 | `importar-historico-github` | Gera `resumo/` a partir dos seus PRs no GitHub |
 | `biblioteca-pdf-export` | Converte um doc em PDF no tema do dashboard (pra mandar pra PO/QA) |
-| `task-hub-resume` / `-qa` / `-complete` | Acionadas pelos botões do dashboard |
+| `testes-manuais` | Monta e registra o roteiro de teste manual (API ou tela) no doc `testes/` da task |
+| `mock-completo` | Garante que dado mockado pra teste local cubra o fluxo inteiro da task |
+| `delegar-task` | Analisa uma task, passa pra outro dev, acompanha PRs e registra o review (página **Time**) |
+| `evidencia-imagem` | Monta um PNG de evidência (prints + destaques + regras) em `exportacoes/` |
+| `task-hub-resume` / `task-hub-qa` | Acionadas pelos botões do dashboard |
 
-Ficam em `.claude/skills/` e `dashboard-visual/.claude/skills/`.
-`controle-documentacao` e `biblioteca-pdf-export` também viram globais
+Ficam em `.claude/skills/` e `dashboard-visual/.claude/skills/`. As que
+fazem sentido fora da Biblioteca (todas menos `biblioteca-setup`,
+`importar-historico-github` e `task-hub-*`) também viram globais
 (junction em `~/.claude/skills`, feito no setup).
+
+### E o fluxo de desenvolvimento?
+
+A Biblioteca não traz skills de triagem, plano, TDD, review ou git — ela
+se pluga em qualquer fluxo. O contrato é a tabela **Gatilhos automáticos**
+do `controle-documentacao`: evento do fluxo (plano aprovado, testes
+rodados, PR aberto, task fechada) → o que atualizar na Biblioteca. Funciona
+com o fluxo do seu `CLAUDE.md`, com um público como o
+[superpowers](https://github.com/obra/superpowers), ou sem fluxo nenhum.
+
+A página **Time** é opcional: crie a pasta `delegadas/` (ou deixe a skill
+`delegar-task` criar na primeira delegação) pra ela aparecer no header.
 
 ## Limitações
 
@@ -87,5 +104,5 @@ Ficam em `.claude/skills/` e `dashboard-visual/.claude/skills/`.
 - **Um usuário, local** — favoritos ficam no `localStorage` do navegador.
 - **Cores de PR exigem `gh` autenticado**; sem ele os pills ficam cinza.
 - **Opcionais:** Azure DevOps (`azureOrgUrl` no config), protocolo
-  `biblioteca-cmd:` (`register-protocol.ps1`, sem ele os botões só copiam
-  pro clipboard) e MCP `azure-devops` (somente leitura).
+  `biblioteca-cmd-run:` (`register-protocol.ps1`, sem ele os botões só
+  copiam pro clipboard) e MCP `azure-devops` (somente leitura).
