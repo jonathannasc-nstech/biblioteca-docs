@@ -12,6 +12,7 @@ $script:TypeLabels = @{
     'testes' = 'Testes'
     'resumo' = 'Resumo'
     'handover-tecnico' = 'Handover tecnico'
+    'delegada' = 'Delegada'
 }
 
 $script:StatusLabels = @{
@@ -216,7 +217,7 @@ function Build-RelatedSection($meta) {
 
 function Serialize-Frontmatter($meta) {
     $lines = @('---')
-    $order = @('number', 'type', 'status', 'repo', 'task', 'branch', 'function', 'titulo_busca', 'stub', 'cluster', 'pseudo_task', 'pr_pending', 'pr_merged', 'pr_rejected', 'plan_active', 'related', 'updated', 'author')
+    $order = @('number', 'type', 'status', 'repo', 'task', 'branch', 'function', 'titulo_busca', 'dev', 'dificuldade', 'estimativa', 'delegada_em', 'stub', 'cluster', 'pseudo_task', 'pr_pending', 'pr_merged', 'pr_rejected', 'plan_active', 'related', 'updated', 'author')
     foreach ($key in $order) {
         if (-not $meta.Contains($key)) { continue }
         if ($key -eq 'related') {

@@ -117,6 +117,38 @@ function Get-RepoSortKey([string]$repo) {
 # precisar de mais um tipo de card, ele tambem chama essas 3 funcoes, nao
 # escreve o HTML de novo.
 
+# --- Delegadas (pagina time.html) ---------------------------------------
+# Valor de uma linha `| Campo | valor |` da tabela "Analise" de um doc
+# `delegada` - casa pelo prefixo ASCII do rotulo (Tela/Causa/Aten), nunca
+# pelo rotulo inteiro com acento (.ps1 sem BOM corrompe acento literal).
+function Get-DelegadaField([string]$body, [string]$labelPrefix) {
+    $m = [regex]::Match($body, "(?m)^\|\s*\**$labelPrefix[^|]*\|\s*(.+?)\s*\|\s*$")
+    if ($m.Success) { return $m.Groups[1].Value.Trim() }
+    return ''
+}
+
+# Ultima rodada de review registrada pela skill gbm-delegar-task
+# (`### Rodada N - data - PR #X - <veredito>` dentro de `## Review`) + a
+# linha `**Resumo:**` dela. Veredito pelo texto do titulo: "Ajustes
+# solicitados" / "Aprovado" (convencao fixa da skill).
+function Get-DelegadaReview([string]$body) {
+    $rounds = [regex]::Matches($body, '(?m)^### Rodada.*$')
+    if ($rounds.Count -eq 0) { return $null }
+    $last = $rounds[$rounds.Count - 1]
+    $heading = $last.Value.Substring(4).Trim()
+    $tail = $body.Substring($last.Index + $last.Length)
+    $next = [regex]::Match($tail, '(?m)^#{2,3} ')
+    if ($next.Success) { $tail = $tail.Substring(0, $next.Index) }
+    $resumo = [regex]::Match($tail, '\*\*Resumo:\*\*\s*(.+)')
+    $verdict = if ($heading -match '(?i)ajuste|mudan') { 'ajustes' } elseif ($heading -match '(?i)aprovad') { 'aprovado' } else { 'comentado' }
+    return [PSCustomObject]@{
+        Count   = $rounds.Count
+        Heading = $heading
+        Resumo  = if ($resumo.Success) { $resumo.Groups[1].Value.Trim() } else { '' }
+        Verdict = $verdict
+    }
+}
+
 function Get-CardHeadHtml([string]$title, [string]$rightIconsHtml) {
     return @"
   <div class="card-head">

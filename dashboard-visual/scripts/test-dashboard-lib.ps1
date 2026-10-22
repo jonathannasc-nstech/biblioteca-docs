@@ -60,9 +60,40 @@ Assert ($pessoal.Bucket -eq 2) 'Get-RepoSortKey: repo pessoal cai no Bucket 2 (s
 $desconhecido = Get-RepoSortKey 'algum-repo-sem-padrao'
 Assert ($desconhecido.Bucket -eq 1) 'Get-RepoSortKey: repo sem padrao conhecido cai no fallback Bucket 1'
 
+# Get-DelegadaField / Get-DelegadaReview (time.html) - corpo no formato do
+# _templates/delegada.md; acento via codepoint (este .ps1 nao tem BOM).
+$ccedil = [char]0x00E7; $atilde = [char]0x00E3; $aacute = [char]0x00E1; $otilde = [char]0x00F5
+$bodyDeleg = @"
+## An${aacute}lise
+
+| Campo | Valor |
+|---|---|
+| Tela | Mar > Relatorio |
+| **Causa prov${aacute}vel** | ``volume-table.tsx`` exibe ``item.basement`` |
+| Aten${ccedil}${atilde}o | Spec obrigatoria |
+
+## Review
+
+### Rodada 1 - 2026-10-01 - PR #1 - Ajustes solicitados
+
+- **Resumo:** 2 findings - 1 Blocker
+
+### Rodada 2 - 2026-10-02 - PR #1 - Aprovado
+
+- **Resumo:** 0 findings
+
+## Anota${ccedil}${otilde}es
+"@
+Assert ((Get-DelegadaField $bodyDeleg 'Causa') -eq '`volume-table.tsx` exibe `item.basement`') 'Get-DelegadaField: le valor de linha com rotulo em negrito e acento'
+Assert ((Get-DelegadaField $bodyDeleg 'Aten') -eq 'Spec obrigatoria') 'Get-DelegadaField: casa por prefixo ASCII do rotulo'
+Assert ((Get-DelegadaField $bodyDeleg 'Dificuldade') -eq '') 'Get-DelegadaField: rotulo ausente retorna vazio'
+$rev = Get-DelegadaReview $bodyDeleg
+Assert ($rev.Count -eq 2 -and $rev.Verdict -eq 'aprovado' -and $rev.Resumo -eq '0 findings') 'Get-DelegadaReview: usa a ULTIMA rodada (veredito + resumo dela, nao da 1a)'
+Assert ($null -eq (Get-DelegadaReview '## Review')) 'Get-DelegadaReview: sem rodada retorna null'
+
 if ($failures.Count -gt 0) {
     Write-Host "test-dashboard-lib: $($failures.Count) falha(s):" -ForegroundColor Red
     foreach ($f in $failures) { Write-Host "  - $f" -ForegroundColor Red }
     exit 1
 }
-Write-Host 'test-dashboard-lib: ok (18 casos).'
+Write-Host 'test-dashboard-lib: ok (23 casos).'

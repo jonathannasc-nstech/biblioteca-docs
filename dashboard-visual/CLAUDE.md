@@ -9,8 +9,8 @@ nos favoritos do navegador — abrir por lá, sem precisar passar por
 
 ## Arquitetura interna — onde editar (leia antes de mexer no HTML/CSS)
 
-`build-dashboard.ps1` gera 7 páginas HTML (`dashboard.html`, `summaries/*.html`,
-`paleta.html`, `archive.html`, `nova-task.html`, `pendencias.html` + o
+`build-dashboard.ps1` gera 8 páginas HTML (`dashboard.html`, `summaries/*.html`,
+`paleta.html`, `archive.html`, `nova-task.html`, `pendencias.html`, `time.html` + o
 redirect legado) — cada função `Build-*Html` monta uma delas. Isso já causou
 2 bugs reais de duplicação (2026-09-10-11: `titulo_busca` sumiu do card de QA
 porque cada tipo de card tinha seu próprio HTML escrito na mão; o CSS de cor
@@ -35,6 +35,11 @@ existia em 7 cópias). Pra não repetir isso:
   nem `$faviconLink` dentro de um comentário nessas duas heredocs
   (aconteceu, duplicou o bloco de CSS dentro de um comentário) — descrever
   por extenso em vez disso.
+- **CSS de card** (grade, `.card`, chips, pills de PR, `.position`, rodapé,
+  `.copy-btn`): mora na variável `$cardCss` (logo abaixo de `$sharedCss`),
+  usada pelo `dashboard.html` (placeholder `__CARD_CSS__` no `$head`) e pelo
+  `time.html`. Mesmo cuidado do `$sharedCss`: nunca escrever o placeholder
+  literal num comentário do `$head`.
 - CSS/JS que só uma página usa (ex.: formulário de `nova-task.html`, tabela
   de `pendencias.html`) fica dentro da função daquela página mesmo — não
   precisa sair de lá.
@@ -273,6 +278,37 @@ existia em 7 cópias). Pra não repetir isso:
   fixa, não é heurística) sempre por último. Também filtra fora qualquer
   entrada que não pareça nome de pasta de verdade (vírgula/espaço — sinal
   de campo `repo:` de algum doc com 2 valores colados por engano).
+
+- `time.html` — página **Time** (link "Time (N)" no header, N = delegadas
+  ativas): tasks passadas pra outros devs, uma coluna por dev
+  (`delegadas/devs.json`, na ordem do arquivo; cada dev ganha uma cor —
+  avatar, faixa da coluna, borda dos cards — pela posição numa paleta fixa,
+  ou pelo campo opcional `cor` (hex) no JSON) + coluna "Sem dev" quando há
+  delegada analisada sem dono + coluna extra pra qualquer `dev:` que não está
+  mais no JSON (delegada nunca some por dev removido). Gerada por
+  `Build-TimeHtml`, só se a pasta `delegadas/` existir (export público/clone
+  novo não ganha página nem link). Docs `type: delegada` ficam em `$all`
+  (o sweep/backfill de PR precisa deles — é o sweep que fecha a delegada
+  quando o PR do dev mergeia), mas são filtrados de `$ownDocs`, que alimenta
+  a grade principal e a lista de repos. Card reaproveita
+  `Get-CardHeadHtml`/`Get-CardSubtitlesHtml`/`Get-CardFootHtml` e o
+  `$cardCss`; o que é só dele: chip de **etapa** derivado (Aguardando dev →
+  Em desenvolvimento → PR aberto/aguardando review → Ajustes solicitados |
+  Aprovado → Concluída; lê o veredito do último `### Rodada` em `## Review`),
+  chip de dificuldade/estimativa (frontmatter) e, expandido, Tela/Causa
+  provável/Atenção (linhas da tabela `## Análise`, casadas por prefixo ASCII
+  — rótulos fixos definidos pela skill `gbm-delegar-task`) + último review.
+  Botões do header: **+ Analisar tasks** e **Revisar PRs** (diálogo com
+  textarea de links → abre o Claude em `reposBasePath` com prompt que
+  chama a skill `gbm-delegar-task` no modo certo, `biblioteca-cmd-run:`),
+  **Buscar PRs** (roda `scripts/delegadas-prs.ps1` direto, sem Claude:
+  `gh search prs <taskId> --author <login> --owner <githubOrg>` por
+  delegada ativa, URL nova vira `pr_pending` e o sync classifica) e
+  **+ Dev** (roda `scripts/time-dev.ps1` direto — nome vai em base64 porque
+  o `launch-command.vbs` decodifica a URL byte a byte e quebraria acento;
+  remover recusa se o dev ainda tem task ativa). Card com PR aberto ganha
+  botão **Revisar PR** já com os links. Auto-reload de 20s igual ao
+  dashboard, pulado enquanto um diálogo estiver aberto.
 
 ## Protocolo de seleção
 

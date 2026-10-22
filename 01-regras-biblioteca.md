@@ -44,6 +44,7 @@ Biblioteca/
 ├── testes/
 ├── resumo/
 ├── handover-tecnico/
+├── delegadas/                  # tasks passadas pra devs do time + devs.json (pagina Time do dashboard)
 ├── progresso/                  # doc de trabalho, sobrescrito, fora do indice numerado e do sync-all.ps1
 ├── reqs/                       # REQ/card original verbatim, fora do indice numerado
 ├── planos/                     # backup automatico de todo plano de ExitPlanMode (hook), fora do indice numerado
@@ -61,6 +62,7 @@ Biblioteca/
 | `testes` | Unitários + manuais no mesmo doc, um por task |
 | `resumo` | Dado factual pro dashboard — status/implementado/REQs/falta. **Um por task+repo**, nunca mais de um (ver "Regras de status" abaixo) |
 | `handover-tecnico` | Módulo, playbook, contrato, convenções, debug consolidado |
+| `delegada` | Task passada pra outro dev do time: análise (tela/repo/causa/atenção/dificuldade), dev, PRs e rodadas de review. **Um por task** (`repo:` lista todos os repos). Entra no índice, mas só aparece na página **Time** (`time.html`), nunca na grade principal. Fluxo na skill pessoal `gbm-delegar-task`; devs em `delegadas/devs.json` (botão "+ Dev") |
 | `reqs` | Card/issue do seu rastreador de tarefas (+ item pai, se houver) colado verbatim — referência crua, fora do índice numerado e do `sync-all.ps1` |
 | `planos` | Cópia bruta de cada plano aprovado em `ExitPlanMode` — sem vínculo com task/repo, backup histórico. Copiado automaticamente por hook (`~/.claude/settings.json`, `PermissionRequest` no matcher `ExitPlanMode`), não por ação manual do agente. Fora do índice numerado e do `sync-all.ps1` |
 | `progresso` | Doc de trabalho por task, sobrescrito (não log) — reflete o estado atual da implementação, pra sobreviver a sessão cair no meio. Atualizado a cada divergência relevante do `task-planning`. Fora do índice numerado e do `sync-all.ps1`; arquivado em `_archive/progresso/` quando a task fecha |

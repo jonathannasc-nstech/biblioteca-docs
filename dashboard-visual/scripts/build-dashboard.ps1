@@ -82,6 +82,143 @@ $sharedCss = @'
 *:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
 '@
 
+# CSS de card (grade, card, chips, pills de PR, status por camada, rodape,
+# botoes) - compartilhado entre dashboard.html e time.html (cards de task
+# delegada usam o mesmo visual). Antes morava inline no head do dashboard;
+# saiu pra ca quando time.html precisou do mesmo bloco, pra nao virar 2 copias.
+$cardCss = @'
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 16px; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 0;
+  }
+  /* Ritmo vertical explicito (sem gap generico no .card) - cada elemento
+     controla o proprio espaco ABAIXO dele, pra nao empilhar gap+margem
+     como acontecia antes (raiz do "espaco morto" entre titulo/subtitulos/
+     chip Azure). Ver .card-head/.subtitles/.ext-links/.func/.chips/
+     .position/.qa-field-boxes mais abaixo. */
+  .card-current {
+    border-color: var(--current); box-shadow: 0 0 0 1px var(--current), 0 0 16px -2px var(--current-glow);
+  }
+  .qa-round-card { border-left: 3px solid #3d5c44; }
+  /* Uma caixa por modulo dentro do card de rodada de QA - mesmo visual
+     da caixa "Pendencias" (.position: fundo escuro, borda, cantos
+     arredondados), so' que uma por modulo em vez de uma lista de
+     camadas. Rotulo (.qa-field-box-label) so' aparece quando 2+ caixas
+     (Get-QaFieldBoxesHtml decide isso, nao o CSS). */
+  .qa-field-boxes { flex-direction: column; gap: 8px; }
+  .qa-field-box {
+    background: #202225; border: 1px solid #303338; border-radius: 8px; padding: 8px 10px;
+  }
+  .qa-field-box-label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--gold-bright); font-weight: 600; margin: 0 0 4px;
+  }
+  .qa-field-text { font-size: 0.85rem; color: #c2c4c9; line-height: 1.42; margin: 0; }
+  .qa-field-text strong { color: var(--gold-bright); font-weight: 600; }
+  .badge-current {
+    align-self: flex-start; background: var(--current); color: #2b1d0a; font-weight: 700;
+    font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .card-head-left { display: flex; align-items: center; min-width: 0; flex: 1 1 auto; }
+  .card-head-right { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  .card-title {
+    font-weight: 600; font-size: 0.92rem; color: var(--text); width: 100%; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card.expanded .card-title { -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+  .task-id {
+    font-weight: 500; color: var(--text-dim); font-size: 0.8rem; display: inline-block; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
+  }
+  /* Wrapper dos 2 subtitulos (task-id + repo) - zero espaco entre eles,
+     um unico bloco compacto entre o titulo e o chip Azure/func. */
+  .subtitles { display: flex; flex-direction: column; gap: 0; margin-bottom: 4px; }
+  .subtitle-line { margin: 0; }
+  .repo {
+    font-family: ui-monospace, "SF Mono", monospace; font-size: 0.78rem; color: var(--gold);
+    display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
+  }
+  .repo-line { margin: 0 0 8px; }
+  .subtitles .repo-line { margin: 0; }
+  .func {
+    font-size: 0.88rem; color: #c2c4c9; margin: 0 0 8px; line-height: 1.35;
+  }
+  .ext-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .ext-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 500;
+    padding: 4px 10px; border-radius: 999px; text-decoration: none;
+    background: #2c3038; border: 1px solid #454a54; color: var(--gold-bright);
+  }
+  .ext-link:hover { background: #363b45; color: #fff; }
+  .ext-azure { background: #1f2a33; color: #7fa8c2; border-color: #3d5566; }
+  .ext-github { border-color: #4d5560; }
+  .ext-github-open { background: #242e1f; color: #a3b886; border-color: #4a5c3d; }
+  .ext-github-merged { background: #281f33; color: #a996c4; border-color: #4f3d5c; }
+  .ext-github-rejected { background: #33221f; color: #c98a7a; border-color: #5c3d34; }
+  .icon-btn, .star-btn, .expand-btn {
+    background: transparent; border: none; cursor: pointer; padding: 2px;
+    display: flex; align-items: center; line-height: 0; color: var(--text-dim);
+    text-decoration: none;
+  }
+  .icon-btn:hover, .resumo-btn:hover { color: var(--gold-bright); }
+  .resumo-btn { color: var(--text); }
+  .star-icon { fill: none; stroke: var(--text-dim); stroke-width: 1.6; transition: fill .15s, stroke .15s; }
+  .star-btn:hover .star-icon { stroke: var(--current); }
+  .card-current .star-icon { fill: var(--current); stroke: var(--current); }
+  .expand-btn {
+    flex-shrink: 0; margin-left: auto;
+    border: 1px solid var(--card-border); border-radius: 6px; width: 22px; height: 22px;
+    justify-content: center; transition: transform .15s, color .15s, border-color .15s;
+  }
+  .expand-btn:hover { color: var(--gold-bright); border-color: var(--gold-border); }
+  .card.expanded .expand-btn { transform: rotate(180deg); }
+  .chips, .position, .btns, .qa-field-boxes { display: none; }
+  .card.expanded .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .card.expanded .position { display: flex; margin-bottom: 8px; }
+  .card.expanded .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card.expanded .qa-field-boxes { display: flex; margin-bottom: 8px; }
+  /* Hora do "Atualizado": sempre visivel em Ativas, so' ao expandir em
+     Completas - card fechado mostra so a data, sem poluir a grade. */
+  .updated-time { display: none; }
+  #grid-active .updated-time, .card.expanded .updated-time { display: inline; }
+  .chip {
+    font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .chip:hover { filter: brightness(1.2); }
+  .chip-task-code { background: #332a12; color: #d9b568; border-color: #6b5628; }
+  .chip-task-planning { background: #1a2e30; color: #7cbfc4; border-color: #355a5e; }
+  .chip-testes { background: #1f2e22; color: #86b894; border-color: #3d5c44; }
+  .chip-handover-tecnico { background: #2e1f28; color: #c184a0; border-color: #5c3a4f; }
+  .chip-rules { background: #292420; color: #a89484; border-color: #4d413a; }
+  .position { background: #202225; border: 1px solid #303338; border-radius: 8px; padding: 8px 10px; flex-direction: column; gap: 6px; }
+  /* Status por camada (migrations/backend/frontend/testes), 1 por linha
+     (empilhado, nao lado a lado) - verde/vermelho/amarelo tipo semaforo,
+     cor propria (nao reaproveita --gold/--current) pra ficar universal. */
+  .layer-row { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; }
+  .layer-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .layer-label { color: #c2c4c9; min-width: 100px; }
+  .layer-state { color: var(--text-faint); font-size: 0.72rem; }
+  .layer-done .layer-dot { background: #22c55e; }
+  .layer-done .layer-state { color: #4ade80; }
+  .layer-pending .layer-dot { background: #ef4444; }
+  .layer-pending .layer-state { color: #f0908a; }
+  .layer-na .layer-dot { background: #eab308; }
+  .layer-na .layer-state { color: #d9c069; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 6px; gap: 8px; flex-wrap: wrap; }
+  .updated { font-size: 0.72rem; color: var(--text-faint); }
+  .copy-btn {
+    background: var(--gold-bg); color: var(--text); border: 1px solid var(--gold-border); border-radius: 6px;
+    padding: 5px 10px; font-size: 0.76rem; cursor: pointer;
+    display: inline-block; text-decoration: none;
+  }
+  .copy-btn:hover { filter: brightness(1.15); }
+  .qa-btn { border-color: #6b3f34; }
+'@
+
 # Favicon - livro verde vibrante, mesmo desenho do $bookIcon (silhueta) mas
 # preenchido (stroke fino some em 16x16) - vai pra aba do navegador/favoritos.
 $faviconSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%2322c55e' d='M2 4.8c1.6-.9 3.6-1.3 5.5-1.3 1.7 0 3.4.4 4.5 1v14c-1.1-.6-2.8-1-4.5-1-1.9 0-3.9.4-5.5 1.3V4.8z'/><path fill='%2316a34a' d='M22 4.8c-1.6-.9-3.6-1.3-5.5-1.3-1.7 0-3.4.4-4.5 1v14c1.1-.6 2.8-1 4.5-1 1.9 0 3.9.4 5.5 1.3V4.8z'/></svg>"
@@ -387,15 +524,27 @@ foreach ($d in $parsedDocs) {
         PrPending  = Clean-Field $p.Meta['pr_pending']
         PrMerged   = Clean-Field $p.Meta['pr_merged']
         PrRejected = Clean-Field $p.Meta['pr_rejected']
+        # so' docs `delegada` (pagina time.html) usam estes - vazio nos demais
+        Dev         = Clean-Field $p.Meta['dev']
+        Dificuldade = Clean-Field $p.Meta['dificuldade']
+        Estimativa  = Clean-Field $p.Meta['estimativa']
+        DelegadaEm  = Clean-Field $p.Meta['delegada_em']
     }
 }
+
+# `delegada` = task passada pra outro dev do time (pagina time.html). Fica
+# em $all (o sweep/backfill de PR abaixo precisa enxergar - e' isso que
+# fecha a delegada sozinha quando o PR do dev mergeia), mas NUNCA vira card
+# do dashboard principal nem entra na lista de repos: nao e' trabalho
+# proprio, e agrupar por task+repo misturaria com uma task minha de mesmo id.
+$ownDocs = @($all | Where-Object { $_.Type -ne 'delegada' })
 
 # Lista de repos conhecidos - repos ja com doc na Biblioteca + pastas reais em
 # reposBasePath (repo novo que ainda nao tem task nenhuma). Usada nos
 # datalists de nova-task.html e do seletor "Abrir Claude" do header do
 # dashboard - montada 1x aqui pra nao duplicar a logica nos dois lugares.
 $knownRepos = New-Object System.Collections.Generic.List[string]
-foreach ($r in @($all | ForEach-Object { $_.Repo } | Where-Object { $_ })) {
+foreach ($r in @($ownDocs | ForEach-Object { $_.Repo } | Where-Object { $_ })) {
     if (-not $knownRepos.Contains($r)) { $knownRepos.Add($r) }
 }
 if ($bibConfig.reposBasePath -and (Test-Path $bibConfig.reposBasePath)) {
@@ -483,7 +632,10 @@ if ($pending.Count -gt 0) {
         if ($stillPending.Count -eq 0) {
             $meta.Remove('pr_pending')
             $doc.PrPending = ''
-            if ($newlyRejected.Count -eq 0) {
+            # archived/superseded = doc ja saiu de cena (ex.: delegada que o
+            # TechLead assumiu): registra pr_merged, mas nunca reabre o status
+            # (bug real, 2026-10-02: delegada 111202 archived virou completed).
+            if ($newlyRejected.Count -eq 0 -and $meta['status'] -notin @('archived', 'superseded')) {
                 # Todas as URLs mergearam, nenhuma rejeitada - so' ENTAO
                 # fecha a task. Se sobrou alguma rejeitada junto das
                 # mergeadas, e' estado misto - nao flipa status sozinho,
@@ -589,7 +741,7 @@ if ($unknown.Count -gt 0) {
 # texto em todo doc do assunto = mesmo grupo, independente de repo/related).
 # Sem cluster, cai no fallback antigo: doc `resumo` agrupa pelo 1o doc em
 # `related:` (o doc-fonte), senao vira card solto (mesma regra do status.ps1).
-$groups = $all | Group-Object {
+$groups = $ownDocs | Group-Object {
     if ($_.Task -eq 'general') {
         if ($_.Cluster) {
             # cluster+repo, nao so cluster: mesmo assunto em repos diferentes
@@ -1986,7 +2138,475 @@ pendBtn.addEventListener('click', function () {
 "@
 }
 
-$activeCards = @($cards | Where-Object { $_.Active } | Sort-Object Updated -Descending)
+# ---------------------------------------------------------------------------
+# Pagina Time (time.html) - tasks delegadas pra outros devs do time, uma
+# coluna por dev. Fonte: docs `type: delegada` em delegadas/ (criados pela
+# skill pessoal gbm-delegar-task) + delegadas/devs.json (lista de devs,
+# editada pelo botao "+ Dev" via scripts/time-dev.ps1 - nunca a mao pelo
+# agente). Feature opt-in: sem a pasta delegadas/ (export publico, clone
+# novo) nao gera pagina nem link no header.
+# Texto com acento vai como entidade HTML (&aacute;) ou \u00e1 no JS - este
+# .ps1 nao tem BOM, acento literal corrompe (ver $crossmark acima).
+# ---------------------------------------------------------------------------
+$delegadasDir = Join-Path $root 'delegadas'
+$timeEnabled = Test-Path $delegadasDir
+# Analisar/revisar precisa ler codigo de varios repos - abre o Claude na
+# pasta que contem todos (reposBasePath), igual o "Abrir Claude" sem repo.
+$timeClaudeDir = if ($bibConfig.reposBasePath) { $bibConfig.reposBasePath } else { $root }
+$teamIcon = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.3"/><path d="M1.8 13.5c.5-2.4 2.2-3.7 4.2-3.7s3.7 1.3 4.2 3.7"/><circle cx="11.3" cy="6.2" r="1.8"/><path d="M11.6 9.9c1.5.2 2.4 1.3 2.7 3"/></svg>'
+
+function Get-TimeDevs() {
+    $path = Join-Path $delegadasDir 'devs.json'
+    if (-not (Test-Path $path)) { return @() }
+    try {
+        $raw = [IO.File]::ReadAllText($path) | ConvertFrom-Json
+    } catch {
+        Write-Host 'dashboard: delegadas/devs.json invalido - pagina Time sem devs cadastrados.' -ForegroundColor Yellow
+        return @()
+    }
+    return @($raw.devs | Where-Object { $_ -and $_.id })
+}
+
+# Get-DelegadaField / Get-DelegadaReview (parsers do corpo) moram em
+# dashboard-lib.ps1 - funcoes puras, cobertas por test-dashboard-lib.ps1.
+
+# PRs da delegada: links no corpo (mesmo Get-Signals do dashboard) + qualquer
+# URL que so' esteja nos campos pr_* (sweep/delegadas-prs.ps1).
+function Get-DelegadaPrs($d) {
+    $list = New-Object System.Collections.Generic.List[string]
+    foreach ($pr in (Get-Signals @($d) $d.Task).PRs) { if (-not $list.Contains($pr)) { $list.Add($pr) } }
+    foreach ($field in @($d.PrPending, $d.PrMerged, $d.PrRejected)) {
+        foreach ($m in [regex]::Matches("$field", $prLinkPattern)) { if (-not $list.Contains($m.Value)) { $list.Add($m.Value) } }
+    }
+    return @($list)
+}
+
+function Test-PrClosed($d, [string]$pr) {
+    return ($d.PrMerged -and $d.PrMerged.Contains($pr)) -or ($d.PrRejected -and $d.PrRejected.Contains($pr))
+}
+
+# Etapa do card (chip colorido) - deriva so' de status/dev/PRs/review, nada
+# gravado a mais no doc.
+function Get-DelegadaStage($d, $prs, $review) {
+    if ($d.Status -eq 'completed') { return @{ Key = 'done'; Label = 'Conclu&iacute;da' } }
+    if (-not $d.Dev) { return @{ Key = 'triagem'; Label = 'Aguardando dev' } }
+    if ($prs.Count -eq 0) { return @{ Key = 'dev'; Label = 'Em desenvolvimento' } }
+    $open = @($prs | Where-Object { -not (Test-PrClosed $d $_) })
+    # Todos os PRs fechados mas status ainda aberto: link entrou so' no corpo
+    # (backfill marca pr_merged, mas so' o sweep de pr_pending fecha status)
+    # ou algum PR foi fechado sem merge - em ambos, conferir na mao.
+    if ($open.Count -eq 0) {
+        if (@($prs | Where-Object { $d.PrMerged -and $d.PrMerged.Contains($_) }).Count -gt 0) { return @{ Key = 'done'; Label = 'PR mergeado &middot; conferir conclus&atilde;o' } }
+        return @{ Key = 'ajustes'; Label = 'PR fechado sem merge' }
+    }
+    if (-not $review) { return @{ Key = 'pr'; Label = 'PR aberto &middot; aguardando review' } }
+    switch ($review.Verdict) {
+        'ajustes' { return @{ Key = 'ajustes'; Label = 'Ajustes solicitados' } }
+        'aprovado' { return @{ Key = 'aprovado'; Label = 'Aprovado &middot; aguardando merge' } }
+        default { return @{ Key = 'pr'; Label = 'Revisado' } }
+    }
+}
+
+function Get-DelegadaLinksHtml($d, $prs) {
+    $links = New-Object System.Collections.Generic.List[string]
+    if ($azureBase -and $d.Task -match '^\d+$') {
+        $links.Add("<a class=`"ext-link ext-azure`" href=`"$azureBase/$($d.Task)`" target=`"_blank`" title=`"Abrir work item no Azure DevOps`">$linkIcon Azure</a>")
+    }
+    foreach ($pr in $prs) {
+        $num = if ($pr -match '(\d+)$') { $Matches[1] } else { '' }
+        $cls = ''; $st = 'Abrir PR no GitHub'
+        if ($d.PrMerged -and $d.PrMerged.Contains($pr)) { $cls = ' ext-github-merged'; $st = 'PR mergeado' }
+        elseif ($d.PrRejected -and $d.PrRejected.Contains($pr)) { $cls = ' ext-github-rejected'; $st = 'PR fechado sem merge' }
+        elseif ($d.PrPending -and $d.PrPending.Contains($pr)) { $cls = ' ext-github-open'; $st = 'PR aberto, aguardando merge' }
+        $kind = Get-PrKindInfo $pr
+        $links.Add("<a class=`"ext-link ext-github$cls`" href=`"$(Esc $pr)`" target=`"_blank`" title=`"$($kind.Title) - $st`">$($kind.Icon) PR #$num</a>")
+    }
+    if ($links.Count -eq 0) { return '' }
+    return "<div class=`"ext-links`">$($links -join "`n")</div>"
+}
+
+# Comando "abrir Claude em <pasta> com <frase>" - mesmo formato que o
+# launch-command.vbs aceita (prefixo fixo, sem aspa dupla no miolo).
+function Get-ClaudeCmd([string]$dir, [string]$phrase) {
+    $safe = $phrase.Replace('"', "'").Replace("'", "''")
+    return "powershell -NoProfile -Command `"cd '$($dir.Replace("'", "''"))'; claude '$safe'`""
+}
+
+function Build-DelegadaCard($d) {
+    $prs = Get-DelegadaPrs $d
+    $review = Get-DelegadaReview $d.Body
+    $stage = Get-DelegadaStage $d $prs $review
+
+    $taskLabel = if ($d.Task -match '^\d+$') { "Task $($d.Task)" } elseif ($d.Cluster) { $d.Cluster } else { 'Geral' }
+    $title = if ($d.TituloBusca) { $d.TituloBusca } elseif ($d.Function) { $d.Function } else { $taskLabel }
+    $repoText = (@($d.Repo -split '[\s,]+' | Where-Object { $_ })) -join ' + '
+    $fileUri = 'file:///' + ($d.Path -replace '\\', '/')
+    $docBtn = "<a class=`"icon-btn resumo-btn`" href=`"$fileUri`" target=`"_blank`" title=`"Abrir doc da delegada`" aria-label=`"Abrir doc da delegada`">$bookIcon</a>"
+    $headHtml = Get-CardHeadHtml $title $docBtn
+    $subtitlesHtml = Get-CardSubtitlesHtml $taskLabel ($title -ne $taskLabel) $repoText
+
+    $diffParts = @(@($d.Dificuldade, $d.Estimativa) | Where-Object { $_ })
+    $diffHtml = if ($diffParts.Count) { "<span class=`"diff-chip`" title=`"Dificuldade estimada na an&aacute;lise`">$(($diffParts | ForEach-Object { Esc $_ }) -join ' &middot; ')</span>" } else { '' }
+    $metaHtml = "<div class=`"deleg-meta`"><span class=`"stage stage-$($stage.Key)`">$($stage.Label)</span>$diffHtml</div>"
+
+    $rows = New-Object System.Collections.Generic.List[string]
+    foreach ($f in @(@{ P = 'Tela'; L = 'Tela' }, @{ P = 'Causa'; L = 'Causa prov&aacute;vel' }, @{ P = 'Aten'; L = 'Aten&ccedil;&atilde;o' })) {
+        $v = Get-DelegadaField $d.Body $f.P
+        if ($v) { $rows.Add("<div class=`"an-row`"><span class=`"an-label`">$($f.L)</span><span class=`"an-text`">$(Format-InlineMd $v)</span></div>") }
+    }
+    $analysisHtml = if ($rows.Count) { "<div class=`"position deleg-box`">$($rows -join '')</div>" } else { '' }
+
+    $reviewHtml = ''
+    if ($review) {
+        $resumoLine = if ($review.Resumo) { "<span class=`"an-text`">$(Format-InlineMd $review.Resumo)</span>" } else { '' }
+        $reviewHtml = "<div class=`"position deleg-box`"><div class=`"an-row`"><span class=`"an-label`">Review ($($review.Count) rodada$(if ($review.Count -gt 1) { 's' }))</span><span class=`"an-text`">$(Esc $review.Heading)</span>$resumoLine</div></div>"
+    }
+
+    $chips = New-Object System.Collections.Generic.List[string]
+    $chips.Add("<a class=`"chip chip-task-code`" href=`"$fileUri`" target=`"_blank`">Delegada</a>")
+    foreach ($r in @($d.Related | Where-Object { $_ -match '^reqs/' })) {
+        $chips.Add("<a class=`"chip chip-task-planning`" href=`"file:///$(($root -replace '\\', '/'))/$(Esc $r)`" target=`"_blank`">REQ</a>")
+    }
+    $chipsHtml = "<div class=`"chips`">$($chips -join "`n")</div>"
+
+    $openPrs = @($prs | Where-Object { -not (Test-PrClosed $d $_) })
+    $btnsHtml = '<div class="btns"></div>'
+    if ($openPrs.Count -gt 0) {
+        $cmd = Get-ClaudeCmd $timeClaudeDir "Use a skill gbm-delegar-task no modo revisar para os PRs: $($openPrs -join ' ') (task $($d.Task), delegada em $($d.Path))."
+        $btnsHtml = "<div class=`"btns`"><a class=`"copy-btn`" href=`"$(Esc (Get-LaunchUri $cmd -AutoRun))`" data-cmd=`"$(Esc $cmd)`">Revisar PR</a></div>"
+    }
+
+    $updatedHtml = if ($d.Updated) { "<span class=`"updated`">Atualizado $(Esc (Format-DisplayDate $d.Updated))</span>" } else { '' }
+    $footHtml = Get-CardFootHtml $updatedHtml $btnsHtml $chevronIcon
+    $searchBlob = Esc(("$taskLabel $title $($d.Repo) $($d.Function)").ToLowerInvariant())
+
+    return @"
+<div class="card" data-search="$searchBlob" data-id="$(Esc $d.Path)">
+$headHtml
+$subtitlesHtml
+  $(Get-DelegadaLinksHtml $d $prs)
+  $metaHtml
+  $analysisHtml
+  $reviewHtml
+  $chipsHtml
+$footHtml
+</div>
+"@
+}
+
+function Build-TimeHtml() {
+    $devs = Get-TimeDevs
+    $delegadas = @($all | Where-Object { $_.Type -eq 'delegada' -and $_.Status -notin @('superseded', 'archived') } | Sort-Object Updated -Descending)
+
+    # Colunas: devs do devs.json na ordem do arquivo + qualquer `dev:` de doc
+    # que nao esta (mais) la - delegada nunca some da tela por dev removido.
+    $columns = New-Object System.Collections.Generic.List[object]
+    foreach ($dv in $devs) { $columns.Add([PSCustomObject]@{ Id = $dv.id; Nome = $dv.nome; Github = $dv.github; Known = $true }) }
+    foreach ($id in @($delegadas | Where-Object { $_.Dev } | ForEach-Object { $_.Dev } | Select-Object -Unique)) {
+        if (-not ($columns | Where-Object { $_.Id -eq $id })) { $columns.Add([PSCustomObject]@{ Id = $id; Nome = $id; Github = ''; Known = $false }) }
+    }
+
+    $colsHtml = New-Object System.Collections.Generic.List[string]
+    $unassigned = @($delegadas | Where-Object { -not $_.Dev -and $_.Status -ne 'completed' })
+    if ($unassigned.Count -gt 0) {
+        $triagemCards = ($unassigned | ForEach-Object { Build-DelegadaCard $_ }) -join "`n"
+        $colsHtml.Add("<section class=`"dev-col dev-col-triagem`"><header class=`"dev-head`"><span class=`"avatar avatar-triagem`">?</span><div class=`"dev-id`"><div class=`"dev-name`">Sem dev</div><div class=`"dev-gh`">analisadas, aguardando atribui&ccedil;&atilde;o</div></div><span class=`"dev-count`">$($unassigned.Count)</span></header><div class=`"dev-cards`">$triagemCards</div></section>")
+    }
+    # Cor por dev (avatar, faixa da coluna e borda esquerda dos cards) pra
+    # distinguir de relance. Pela ordem do devs.json - campo opcional `cor`
+    # (hex) no JSON sobrescreve. Paleta fora do dourado/cores de etapa.
+    $devPalette = @('#b48ee8', '#4fc1b0', '#e8a07c', '#7fb2f0', '#e48aa8', '#a8c46a')
+    $colIndex = 0
+    foreach ($c in $columns) {
+        $devCfg = $devs | Where-Object { $_.id -eq $c.Id } | Select-Object -First 1
+        $accent = if ($devCfg -and "$($devCfg.cor)" -match '^#[0-9A-Fa-f]{6}$') { $devCfg.cor } else { $devPalette[$colIndex % $devPalette.Count] }
+        $colIndex++
+        $mine = @($delegadas | Where-Object { $_.Dev -eq $c.Id })
+        $active = @($mine | Where-Object { $_.Status -ne 'completed' })
+        $done = @($mine | Where-Object { $_.Status -eq 'completed' })
+        $words = @("$($c.Nome)" -split '\s+' | Where-Object { $_ })
+        $initials = if ($words.Count -ge 2) { "$($words[0][0])$($words[-1][0])" } elseif ($words.Count -eq 1) { "$($words[0][0])" } else { '?' }
+        $ghHtml = if ($c.Github) { "<a class=`"dev-gh`" href=`"https://github.com/$(Esc $c.Github)`" target=`"_blank`">@$(Esc $c.Github)</a>" } elseif (-not $c.Known) { '<span class="dev-gh">fora do devs.json</span>' } else { '' }
+        $activeHtml = if ($active.Count) { ($active | ForEach-Object { Build-DelegadaCard $_ }) -join "`n" } else { '<p class="empty">Nenhuma task ativa.</p>' }
+        $doneHtml = if ($done.Count) { "<details class=`"dev-done`"><summary>Conclu&iacute;das ($($done.Count))</summary><div class=`"dev-cards`">$(($done | ForEach-Object { Build-DelegadaCard $_ }) -join "`n")</div></details>" } else { '' }
+        $colsHtml.Add("<section class=`"dev-col`" style=`"--dev-accent: $accent`"><header class=`"dev-head`"><span class=`"avatar`">$(Esc $initials.ToUpperInvariant())</span><div class=`"dev-id`"><div class=`"dev-name`">$(Esc $c.Nome)</div>$ghHtml</div><span class=`"dev-count`" title=`"Tasks ativas`">$($active.Count)</span></header><div class=`"dev-cards`">$activeHtml</div>$doneHtml</section>")
+    }
+    $boardHtml = if ($colsHtml.Count) { "<div class=`"team-board`">$($colsHtml -join "`n")</div>" } else { '<div class="empty-board"><p>Nenhum dev cadastrado ainda.</p><p class="hint">Clique em <strong>+ Dev</strong> pra adicionar o primeiro. Tasks analisadas sem dev aparecem numa coluna "Sem dev".</p></div>' }
+
+    $activeTotal = @($delegadas | Where-Object { $_.Status -ne 'completed' }).Count
+    # Relativo a este script, nao a $libRoot (o dot-source do lib-doc.ps1
+    # sobrescreve $libRoot com a raiz da Biblioteca - $script:LibRoot e' a
+    # mesma variavel). ..\..\scripts = _ferramenta\scripts no pessoal e
+    # raiz\scripts no export publico flat.
+    $scriptsDir = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\scripts'))
+    $scriptsDirJs = $scriptsDir.Replace('\', '\\')
+    $syncPrsCmd = "powershell -NoProfile -Command `"cd '$($scriptsDir.Replace("'", "''"))'; powershell -NoProfile -ExecutionPolicy Bypass -File .\delegadas-prs.ps1`""
+    $removeRows = ($devs | ForEach-Object {
+        $rmCmd = "powershell -NoProfile -Command `"cd '$($scriptsDir.Replace("'", "''"))'; powershell -NoProfile -ExecutionPolicy Bypass -File .\time-dev.ps1 -Remover '$($_.id)'`""
+        "<div class=`"rm-row`"><span>$(Esc $_.nome) <span class=`"dev-gh`">@$(Esc $_.github)</span></span><a class=`"copy-btn qa-btn`" href=`"$(Esc (Get-LaunchUri $rmCmd -AutoRun))`" data-cmd=`"$(Esc $rmCmd)`">Remover</a></div>"
+    }) -join "`n"
+    $removeHtml = if ($removeRows) { "<h3>Remover</h3><p class=`"hint`">S&oacute; remove quem n&atilde;o tem task ativa (o script recusa e explica no terminal).</p>$removeRows" } else { '' }
+    $timeClaudeDirJs = $timeClaudeDir.Replace('\', '\\')
+    $libRootJsLocal = $root.Replace('\', '\\')
+
+    return @"
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+$faviconLink
+<title>Biblioteca - Time</title>
+<style>
+$sharedCss
+$cardCss
+  :root {
+    --input-bg: #262931;
+    --claude-bg: #16281c; --claude-border: #2f6b45; --claude-bright: #4ade80;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0; padding: 20px 32px 64px;
+  }
+  .back { color: var(--text-dim); text-decoration: none; font-size: 0.82rem; }
+  .back:hover { color: var(--gold-bright); }
+  .top-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 2px solid var(--gold-border); padding: 10px 0 16px; margin-bottom: 22px; }
+  .brand-icon svg { width: 32px; height: 32px; }
+  h1 { font-size: 1.6rem; margin: 0; color: #fff; letter-spacing: 0.02em; }
+  .sub { color: var(--gold); font-size: 0.85rem; margin: 2px 0 0; }
+  .tools { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  #search {
+    background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text);
+    border-radius: 8px; padding: 9px 12px; font-size: 0.88rem; width: 240px;
+  }
+  #search:focus-visible { border-color: var(--gold); }
+  .tools .copy-btn, .tools .claude-btn { padding: 9px 16px; font-size: 0.85rem; border-radius: 8px; }
+  .primary-link { border-color: var(--gold); color: var(--gold-bright); font-weight: 600; }
+  .claude-btn {
+    background: var(--claude-bg); color: var(--claude-bright); border: 1px solid var(--claude-border);
+    font-weight: 600; cursor: pointer; display: inline-block; text-decoration: none;
+  }
+  .claude-btn:hover { filter: brightness(1.2); }
+  .team-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(340px, 1fr); gap: 16px; overflow-x: auto; align-items: start; padding-bottom: 8px; }
+  .dev-col { background: #202225; border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .dev-col-triagem { border-style: dashed; }
+  .dev-head { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border); }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--gold-bg); border: 1px solid var(--gold-border); color: var(--gold-bright); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+  .dev-col[style] { border-top: 3px solid var(--dev-accent); }
+  .dev-col[style] .avatar { color: var(--dev-accent); border-color: var(--dev-accent); background: color-mix(in srgb, var(--dev-accent) 16%, var(--card-bg)); }
+  .dev-col[style] .dev-count { color: var(--dev-accent); }
+  .dev-col[style] .card { border-left: 3px solid var(--dev-accent); }
+  .avatar-triagem { background: #2a2c30; border-color: #4a4e58; color: #b0b4bc; }
+  .dev-id { min-width: 0; flex: 1 1 auto; }
+  .dev-name { font-weight: 600; color: #fff; font-size: 0.95rem; }
+  .dev-gh { color: var(--text-faint); font-size: 0.76rem; text-decoration: none; }
+  a.dev-gh:hover { color: var(--gold-bright); }
+  .dev-count { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 999px; padding: 2px 10px; font-size: 0.78rem; color: var(--gold); }
+  .dev-cards { display: flex; flex-direction: column; gap: 10px; }
+  .dev-done summary { cursor: pointer; color: var(--text-dim); font-size: 0.8rem; padding: 4px 2px; }
+  .dev-done summary:hover { color: var(--gold-bright); }
+  .dev-done .dev-cards { margin-top: 8px; }
+  .deleg-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .stage, .diff-chip { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .diff-chip { background: #262931; color: var(--text-dim); border-color: var(--card-border); }
+  .stage-triagem { background: #2a2c30; color: #b0b4bc; border-color: #4a4e58; }
+  .stage-dev { background: #1f2733; color: #86a3d9; border-color: #3d4f6b; }
+  .stage-pr { background: #242e1f; color: #a3b886; border-color: #4a5c3d; }
+  .stage-ajustes { background: #33221f; color: #c98a7a; border-color: #5c3d34; }
+  .stage-aprovado { background: var(--gold-bg); color: var(--gold-bright); border-color: var(--gold-border); }
+  .stage-done { background: #281f33; color: #a996c4; border-color: #4f3d5c; }
+  .deleg-box { gap: 8px; }
+  .an-row { display: flex; flex-direction: column; gap: 2px; }
+  .an-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold-bright); font-weight: 600; }
+  .an-text { font-size: 0.83rem; color: #c2c4c9; line-height: 1.4; }
+  .an-text code { font-family: ui-monospace, "SF Mono", monospace; font-size: 0.78rem; color: var(--gold-bright); }
+  .an-text a { color: var(--gold-bright); }
+  .empty-board { background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: 12px; padding: 28px; text-align: center; color: var(--text-dim); }
+  .hint { color: var(--text-faint); font-size: 0.78rem; }
+  dialog.tm-dialog {
+    background: var(--card-bg); color: var(--text); border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 18px 20px; width: min(620px, 92vw);
+  }
+  dialog.tm-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  .tm-dialog h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold-bright); margin: 0 0 6px; }
+  .tm-dialog h3 { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 18px 0 4px; }
+  .tm-dialog label { display: block; font-size: 0.8rem; color: var(--text-dim); margin: 12px 0 6px; }
+  .tm-dialog input[type="text"], .tm-dialog textarea {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text);
+    border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; font-family: inherit;
+  }
+  .tm-dialog textarea { min-height: 130px; resize: vertical; }
+  .tm-dialog input:focus-visible, .tm-dialog textarea:focus-visible { border-color: var(--gold); }
+  .tm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .tm-actions .copy-btn, .tm-actions .claude-btn { padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; }
+  .warn { color: #c98a7a; font-size: 0.8rem; min-height: 1.1em; margin: 8px 0 0; }
+  .rm-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #2a2c30; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<a class="back" href="dashboard.html">&larr; Voltar ao dashboard</a>
+<header class="top-header">
+  <span class="brand-icon">$brandIconGreen</span>
+  <div>
+    <h1>Time</h1>
+    <p class="sub">$($columns.Count) dev(s) &middot; $activeTotal task(s) delegada(s) ativa(s) &middot; atualizado em $today</p>
+  </div>
+  <div class="tools">
+    <input id="search" type="text" placeholder="Buscar task, repo, assunto..." autocomplete="off">
+    <button type="button" class="copy-btn" data-open="dlg-dev">+ Dev</button>
+    <a class="copy-btn" href="$(Esc (Get-LaunchUri $syncPrsCmd -AutoRun))" data-cmd="$(Esc $syncPrsCmd)" title="Procura no GitHub PRs dos devs que citam o id de cada task ativa">Buscar PRs</a>
+    <button type="button" class="copy-btn primary-link" data-open="dlg-review">Revisar PRs</button>
+    <button type="button" class="claude-btn" data-open="dlg-analisar">+ Analisar tasks</button>
+  </div>
+</header>
+
+$boardHtml
+
+<dialog class="tm-dialog" id="dlg-analisar">
+  <h2>Analisar tasks pra delegar</h2>
+  <p class="hint">Um link (ou id) do Azure DevOps por linha. O Claude busca REQ/Task Code/parent, investiga o c&oacute;digo (sem editar nada), devolve a tabela de an&aacute;lise e pergunta qual dev pegou cada uma.</p>
+  <label for="an-links">Tasks</label>
+  <textarea id="an-links" placeholder="https://dev.azure.com/.../_workitems/edit/111008"></textarea>
+  <label for="an-notes">Observa&ccedil;&otilde;es (opcional)</label>
+  <input type="text" id="an-notes" placeholder="ex.: j&aacute; sei que vai pro dev X; PO pediu urg&ecirc;ncia" autocomplete="off">
+  <p class="warn" id="an-warn"></p>
+  <div class="tm-actions"><button type="button" class="copy-btn" data-close>Cancelar</button><a class="claude-btn" id="an-launch" href="#">Abrir Claude</a></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-review">
+  <h2>Revisar PRs de terceiros</h2>
+  <p class="hint">Cole o texto como veio - os links de PR s&atilde;o extra&iacute;dos sozinhos. Pra cada PR o Claude acha a task delegada na Biblioteca (pelo id na branch/t&iacute;tulo/corpo), usa a an&aacute;lise, o escopo e o REQ dela como refer&ecirc;ncia no gbm-pr-review e registra a rodada no doc da delegada.</p>
+  <label for="rv-links">PRs</label>
+  <textarea id="rv-links" placeholder="https://github.com/gbmtech/gbm-app-maritime-backend/pull/123"></textarea>
+  <p class="warn" id="rv-warn"></p>
+  <div class="tm-actions"><button type="button" class="copy-btn" data-close>Cancelar</button><a class="claude-btn" id="rv-launch" href="#">Abrir Claude</a></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-dev">
+  <h2>Adicionar dev ao time</h2>
+  <p class="hint">Grava em <code>delegadas/devs.json</code> via script (sem Claude) e regenera esta p&aacute;gina - ela recarrega sozinha em at&eacute; 20s.</p>
+  <label for="dev-nome">Nome</label>
+  <input type="text" id="dev-nome" placeholder="Nome Sobrenome" autocomplete="off">
+  <label for="dev-gh">Login no GitHub</label>
+  <input type="text" id="dev-gh" placeholder="login-do-github" autocomplete="off">
+  <p class="warn" id="dev-warn"></p>
+  <div class="tm-actions"><button type="button" class="copy-btn" data-close>Fechar</button><a class="claude-btn" id="dev-launch" href="#">Adicionar</a></div>
+  $removeHtml
+</dialog>
+
+<script>
+$launchButtonJs
+document.querySelectorAll('[data-cmd]').forEach(function (btn) {
+  btn.addEventListener('click', function () { biblLaunch(btn, btn.getAttribute('data-cmd')); });
+});
+document.querySelectorAll('[data-open]').forEach(function (btn) {
+  btn.addEventListener('click', function () { document.getElementById(btn.getAttribute('data-open')).showModal(); });
+});
+document.querySelectorAll('[data-close]').forEach(function (btn) {
+  btn.addEventListener('click', function () { btn.closest('dialog').close(); });
+});
+document.querySelectorAll('.expand-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var card = btn.closest('.card');
+    var expand = !card.classList.contains('expanded');
+    card.classList.toggle('expanded', expand);
+    btn.title = expand ? 'Recolher' : 'Expandir';
+    btn.setAttribute('aria-label', btn.title);
+  });
+});
+
+// Mesmo formato de comando do nova-task.html: prompt numa linha so',
+// quebra vira \n literal, aspa dupla vira simples, simples e' dobrada.
+function claudeCmd(dir, prompt) {
+  var oneLine = prompt.replace(/\r\n|\r|\n/g, '\\n').replace(/"/g, "'").replace(/'/g, "''");
+  return 'powershell -NoProfile -Command "cd \'' + dir + '\'; claude \'' + oneLine + '\'"';
+}
+function lines(id) {
+  return document.getElementById(id).value.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+}
+function wireLaunch(btnId, warnId, build) {
+  var btn = document.getElementById(btnId);
+  btn.addEventListener('click', function (e) {
+    var result = build();
+    if (result.error) { e.preventDefault(); document.getElementById(warnId).textContent = result.error; return; }
+    document.getElementById(warnId).textContent = '';
+    biblLaunch(btn, result.cmd);
+    setTimeout(function () { var d = btn.closest('dialog'); if (d) { d.close(); } }, 400);
+  });
+}
+
+wireLaunch('an-launch', 'an-warn', function () {
+  var items = lines('an-links');
+  if (!items.length) { return { error: 'Cole pelo menos uma task.' }; }
+  var notes = document.getElementById('an-notes').value.trim();
+  var prompt = 'Use a skill gbm-delegar-task no modo analisar para as tasks abaixo. Fluxo completo da skill: buscar REQ, Task Code e parent via MCP azure-devops (somente leitura, nunca ferramentas de escrita), investigar o codigo sem editar nada nem trocar de branch, montar a tabela de analise no chat e depois perguntar qual dev pegou cada task. Biblioteca: $libRootJsLocal\nTasks:\n' + items.join('\n') + (notes ? '\nObservacoes: ' + notes : '');
+  return { cmd: claudeCmd('$timeClaudeDirJs', prompt) };
+});
+
+wireLaunch('rv-launch', 'rv-warn', function () {
+  // Agentes entregam os links no meio de texto/markdown - extrai so as URLs de PR (sem duplicar).
+  var found = document.getElementById('rv-links').value.match(/https:\/\/github\.com\/[^\/\s]+\/[^\/\s]+\/pull\/\d+/g) || [];
+  var items = found.filter(function (l, i) { return found.indexOf(l) === i; });
+  if (!items.length) { return { error: 'Nenhum link de PR do GitHub encontrado no texto.' }; }
+  var prompt = 'Use a skill gbm-delegar-task no modo revisar para os PRs abaixo: para cada PR, localizar a task delegada em $libRootJsLocal\\delegadas, usar a analise, o escopo e o REQ dela como referencia no gbm-pr-review e registrar a rodada de review no doc da delegada.\nPRs:\n' + items.join('\n');
+  return { cmd: claudeCmd('$timeClaudeDirJs', prompt) };
+});
+
+wireLaunch('dev-launch', 'dev-warn', function () {
+  var nome = document.getElementById('dev-nome').value.trim().replace(/\s+/g, ' ');
+  var gh = document.getElementById('dev-gh').value.trim().replace(/^@/, '');
+  if (!nome || nome.length > 60) { return { error: 'Nome obrigatorio (ate 60 caracteres).' }; }
+  if (!/^[A-Za-z0-9-]{1,39}$/.test(gh)) { return { error: 'Login do GitHub invalido (letras, numeros e hifen).' }; }
+  // Nome vai em base64 (UTF-8): o launch-command.vbs decodifica byte a byte e
+  // corromperia acento - o script decodifica do lado de la.
+  var b64 = btoa(unescape(encodeURIComponent(nome)));
+  return { cmd: 'powershell -NoProfile -Command "cd \'$scriptsDirJs\'; powershell -NoProfile -ExecutionPolicy Bypass -File .\\time-dev.ps1 -NomeB64 \'' + b64 + '\' -Github \'' + gh + '\'"' };
+});
+
+var search = document.getElementById('search');
+function applySearch() {
+  var q = search.value.trim().toLowerCase();
+  document.querySelectorAll('.team-board .card').forEach(function (card) {
+    card.style.display = !q || card.getAttribute('data-search').indexOf(q) !== -1 ? '' : 'none';
+  });
+}
+search.addEventListener('input', applySearch);
+
+// Auto-reload igual ao dashboard (pagina estatica, regenerada pelo sync) -
+// preserva busca/cards abertos/scroll, e nunca recarrega com dialog aberto.
+var RELOAD_KEY = 'timeReloadState';
+(function restore() {
+  var raw = sessionStorage.getItem(RELOAD_KEY);
+  if (!raw) { return; }
+  sessionStorage.removeItem(RELOAD_KEY);
+  try {
+    var st = JSON.parse(raw);
+    if (st.search) { search.value = st.search; applySearch(); }
+    document.querySelectorAll('.card[data-id]').forEach(function (card) {
+      if ((st.expanded || []).indexOf(card.getAttribute('data-id')) !== -1) { card.classList.add('expanded'); }
+    });
+    (st.openDone || []).forEach(function (i) { var d = document.querySelectorAll('.dev-done')[i]; if (d) { d.open = true; } });
+    window.scrollTo(st.scrollX || 0, st.scrollY || 0);
+  } catch (e) {}
+})();
+setInterval(function () {
+  if (document.querySelector('dialog[open]')) { return; }
+  var openDone = [];
+  document.querySelectorAll('.dev-done').forEach(function (d, i) { if (d.open) { openDone.push(i); } });
+  sessionStorage.setItem(RELOAD_KEY, JSON.stringify({
+    search: search.value,
+    expanded: Array.prototype.map.call(document.querySelectorAll('.card.expanded[data-id]'), function (c) { return c.getAttribute('data-id'); }),
+    openDone: openDone, scrollX: window.scrollX, scrollY: window.scrollY
+  }));
+  location.reload();
+}, 20000);
+</script>
+</body>
+</html>
+"@
+}
+
+$activeCards =@($cards | Where-Object { $_.Active } | Sort-Object Updated -Descending)
 $doneCards = @($cards | Where-Object { -not $_.Active } | Sort-Object Updated -Descending)
 $pendenciasCount = @($cards | Where-Object { $_.ResumoDoc -and $_.ResumoDoc.Status -in @('draft', 'in_progress') -and -not $_.Active }).Count
 
@@ -2227,136 +2847,7 @@ $sharedCss
     font-size: 1rem; color: var(--gold-bright); text-transform: uppercase; letter-spacing: 0.08em;
     border-bottom: 1px solid var(--gold-border); padding-bottom: 8px; margin-top: 32px;
   }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 16px; }
-  .card {
-    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-    padding: 12px 14px; display: flex; flex-direction: column; gap: 0;
-  }
-  /* Ritmo vertical explicito (sem gap generico no .card) - cada elemento
-     controla o proprio espaco ABAIXO dele, pra nao empilhar gap+margem
-     como acontecia antes (raiz do "espaco morto" entre titulo/subtitulos/
-     chip Azure). Ver .card-head/.subtitles/.ext-links/.func/.chips/
-     .position/.qa-field-boxes mais abaixo. */
-  .card-current {
-    border-color: var(--current); box-shadow: 0 0 0 1px var(--current), 0 0 16px -2px var(--current-glow);
-  }
-  .qa-round-card { border-left: 3px solid #3d5c44; }
-  /* Uma caixa por modulo dentro do card de rodada de QA - mesmo visual
-     da caixa "Pendencias" (.position: fundo escuro, borda, cantos
-     arredondados), so' que uma por modulo em vez de uma lista de
-     camadas. Rotulo (.qa-field-box-label) so' aparece quando 2+ caixas
-     (Get-QaFieldBoxesHtml decide isso, nao o CSS). */
-  .qa-field-boxes { flex-direction: column; gap: 8px; }
-  .qa-field-box {
-    background: #202225; border: 1px solid #303338; border-radius: 8px; padding: 8px 10px;
-  }
-  .qa-field-box-label {
-    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
-    color: var(--gold-bright); font-weight: 600; margin: 0 0 4px;
-  }
-  .qa-field-text { font-size: 0.85rem; color: #c2c4c9; line-height: 1.42; margin: 0; }
-  .qa-field-text strong { color: var(--gold-bright); font-weight: 600; }
-  .badge-current {
-    align-self: flex-start; background: var(--current); color: #2b1d0a; font-weight: 700;
-    font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase;
-    padding: 3px 8px; border-radius: 999px;
-  }
-  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
-  .card-head-left { display: flex; align-items: center; min-width: 0; flex: 1 1 auto; }
-  .card-head-right { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-  .card-title {
-    font-weight: 600; font-size: 0.92rem; color: var(--text); width: 100%; line-height: 1.25;
-    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .card.expanded .card-title { -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
-  .task-id {
-    font-weight: 500; color: var(--text-dim); font-size: 0.8rem; display: inline-block; max-width: 100%;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
-  }
-  /* Wrapper dos 2 subtitulos (task-id + repo) - zero espaco entre eles,
-     um unico bloco compacto entre o titulo e o chip Azure/func. */
-  .subtitles { display: flex; flex-direction: column; gap: 0; margin-bottom: 4px; }
-  .subtitle-line { margin: 0; }
-  .repo {
-    font-family: ui-monospace, "SF Mono", monospace; font-size: 0.78rem; color: var(--gold);
-    display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
-  }
-  .repo-line { margin: 0 0 8px; }
-  .subtitles .repo-line { margin: 0; }
-  .func {
-    font-size: 0.88rem; color: #c2c4c9; margin: 0 0 8px; line-height: 1.35;
-  }
-  .ext-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .ext-link {
-    display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 500;
-    padding: 4px 10px; border-radius: 999px; text-decoration: none;
-    background: #2c3038; border: 1px solid #454a54; color: var(--gold-bright);
-  }
-  .ext-link:hover { background: #363b45; color: #fff; }
-  .ext-azure { background: #1f2a33; color: #7fa8c2; border-color: #3d5566; }
-  .ext-github { border-color: #4d5560; }
-  .ext-github-open { background: #242e1f; color: #a3b886; border-color: #4a5c3d; }
-  .ext-github-merged { background: #281f33; color: #a996c4; border-color: #4f3d5c; }
-  .ext-github-rejected { background: #33221f; color: #c98a7a; border-color: #5c3d34; }
-  .icon-btn, .star-btn, .expand-btn {
-    background: transparent; border: none; cursor: pointer; padding: 2px;
-    display: flex; align-items: center; line-height: 0; color: var(--text-dim);
-    text-decoration: none;
-  }
-  .icon-btn:hover, .resumo-btn:hover { color: var(--gold-bright); }
-  .resumo-btn { color: var(--text); }
-  .star-icon { fill: none; stroke: var(--text-dim); stroke-width: 1.6; transition: fill .15s, stroke .15s; }
-  .star-btn:hover .star-icon { stroke: var(--current); }
-  .card-current .star-icon { fill: var(--current); stroke: var(--current); }
-  .expand-btn {
-    flex-shrink: 0; margin-left: auto;
-    border: 1px solid var(--card-border); border-radius: 6px; width: 22px; height: 22px;
-    justify-content: center; transition: transform .15s, color .15s, border-color .15s;
-  }
-  .expand-btn:hover { color: var(--gold-bright); border-color: var(--gold-border); }
-  .card.expanded .expand-btn { transform: rotate(180deg); }
-  .chips, .position, .btns, .qa-field-boxes { display: none; }
-  .card.expanded .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .card.expanded .position { display: flex; margin-bottom: 8px; }
-  .card.expanded .btns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .card.expanded .qa-field-boxes { display: flex; margin-bottom: 8px; }
-  /* Hora do "Atualizado": sempre visivel em Ativas, so' ao expandir em
-     Completas - card fechado mostra so a data, sem poluir a grade. */
-  .updated-time { display: none; }
-  #grid-active .updated-time, .card.expanded .updated-time { display: inline; }
-  .chip {
-    font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; text-decoration: none;
-    border: 1px solid transparent; white-space: nowrap;
-  }
-  .chip:hover { filter: brightness(1.2); }
-  .chip-task-code { background: #332a12; color: #d9b568; border-color: #6b5628; }
-  .chip-task-planning { background: #1a2e30; color: #7cbfc4; border-color: #355a5e; }
-  .chip-testes { background: #1f2e22; color: #86b894; border-color: #3d5c44; }
-  .chip-handover-tecnico { background: #2e1f28; color: #c184a0; border-color: #5c3a4f; }
-  .chip-rules { background: #292420; color: #a89484; border-color: #4d413a; }
-  .position { background: #202225; border: 1px solid #303338; border-radius: 8px; padding: 8px 10px; flex-direction: column; gap: 6px; }
-  /* Status por camada (migrations/backend/frontend/testes), 1 por linha
-     (empilhado, nao lado a lado) - verde/vermelho/amarelo tipo semaforo,
-     cor propria (nao reaproveita --gold/--current) pra ficar universal. */
-  .layer-row { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; }
-  .layer-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .layer-label { color: #c2c4c9; min-width: 100px; }
-  .layer-state { color: var(--text-faint); font-size: 0.72rem; }
-  .layer-done .layer-dot { background: #22c55e; }
-  .layer-done .layer-state { color: #4ade80; }
-  .layer-pending .layer-dot { background: #ef4444; }
-  .layer-pending .layer-state { color: #f0908a; }
-  .layer-na .layer-dot { background: #eab308; }
-  .layer-na .layer-state { color: #d9c069; }
-  .card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 6px; gap: 8px; flex-wrap: wrap; }
-  .updated { font-size: 0.72rem; color: var(--text-faint); }
-  .copy-btn {
-    background: var(--gold-bg); color: var(--text); border: 1px solid var(--gold-border); border-radius: 6px;
-    padding: 5px 10px; font-size: 0.76rem; cursor: pointer;
-    display: inline-block; text-decoration: none;
-  }
-  .copy-btn:hover { filter: brightness(1.15); }
-  .qa-btn { border-color: #6b3f34; }
+__CARD_CSS__
   /* Botoes do header (Abrir Claude / + Nova Task) tem escala propria, igual
      a altura das caixas de busca/repo ao lado - nao reaproveita o padding
      menor do .copy-btn generico (usado nos botoes de card/resumo). */
@@ -2391,7 +2882,7 @@ $sharedCss
 # "$faviconLink", ela tambem sera trocada (bug real, encontrado e corrigido
 # nesta mesma rodada). Nunca escrever esses 2 nomes literalmente em
 # comentario dentro de $head/$foot - descrever por extenso em vez disso.
-$head = $head.Replace('$faviconLink', $faviconLink).Replace('$sharedCss', $sharedCss)
+$head = $head.Replace('$faviconLink', $faviconLink).Replace('$sharedCss', $sharedCss).Replace('__CARD_CSS__', $cardCss)
 
 $foot = @'
 <script>
@@ -2648,6 +3139,12 @@ $knownReposOptionsHtml
 "@
 }
 
+$timeNavHtml = ''
+if ($timeEnabled) {
+    $timeActiveCount = @($all | Where-Object { $_.Type -eq 'delegada' -and $_.Status -in $activeStatuses }).Count
+    $timeNavHtml = "<a class=`"palette-link`" href=`"time.html`" target=`"_blank`">$teamIcon Time$(if ($timeActiveCount) { " ($timeActiveCount)" })</a>"
+}
+
 $body = @"
 <header class="top-header">
   <div class="header-row">
@@ -2666,6 +3163,7 @@ $body = @"
       <a class="palette-link" href="paleta.html" target="_blank">$paletteIcon Paleta de cores</a>
       <a class="palette-link" href="archive.html" target="_blank">$archiveIcon Arquivo</a>
       <a class="palette-link" href="pendencias.html" target="_blank">$pendIcon Pendencias$(if ($pendenciasCount) { " ($pendenciasCount)" })</a>
+      $timeNavHtml
       <a class="palette-link" href="mock/dashboard-mock.html" target="_blank">$mockIcon Mock</a>
     </nav>
   </div>
@@ -2723,6 +3221,9 @@ if ([IO.Path]::GetFullPath($legacyDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'paleta.html'), (Build-PaletteHtml))
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'archive.html'), (Build-ArchiveHtml))
 [System.IO.File]::WriteAllText((Join-Path $hubRoot 'pendencias.html'), (Build-PendenciasHtml))
+if ($timeEnabled) {
+    [System.IO.File]::WriteAllText((Join-Path $hubRoot 'time.html'), (Build-TimeHtml))
+}
 # nova-task.html e' hand-tuned (CSS/layout ajustado interativamente com o
 # usuario) - so' cria se ainda nao existir (bootstrap), nunca sobrescreve
 # depois (mesmo padrao do historico-nova-task.md abaixo). Sobrescrever
