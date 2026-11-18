@@ -51,7 +51,8 @@ exatamente os passos 1-5 da "Rotina de retomada" em
   `testes` continuam `completed`, a task continua aparecendo em
   "Completas" no dashboard. Reabrir pra QA não é reabrir o ciclo de
   entrega.
-- **Registra uma nota no doc `testes/`** dessa task+repo (mesmo arquivo —
+- **Registra uma nota no doc `tasks/{taskId}-*`** (formato atual) ou, em task
+  antiga, no `testes/` dessa task+repo (mesmo arquivo —
   regra de "um documento por task" do `controle-documentacao`): uma seção
   `## Ajustes QA` (ou repetir a seção se já existir uma rodada anterior,
   numerando: "Ajustes QA — rodada 2 (data)") — preenchida conforme a

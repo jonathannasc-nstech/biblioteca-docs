@@ -1,5 +1,4 @@
 ---
-number: NN
 type: delegada
 status: in_progress
 repo: meu-app-backend meu-app-frontend

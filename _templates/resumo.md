@@ -1,5 +1,4 @@
 ---
-number: NN
 type: resumo
 status: in_progress
 repo: nome-do-seu-repo

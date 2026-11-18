@@ -109,9 +109,10 @@ precisar de julgamento.
    e qualquer pendencia registrada (ex: "aguardando resposta do PO").
 6. **Reportar:** branch atual, o que foi restaurado (stash aplicado ou
    nao) e o resumo da task - pronto pra continuar trabalhando.
-7. **Manter o doc `resumo`:** ver skill `controle-documentacao` (tipo
-   `resumo`, um por task+repo). Se nao existir `resumo/{camada}/{taskId}-
-   {slug}.md` pra essa task+repo, criar agora. Atualizar as
+7. **Manter o doc da task:** ver skill `controle-documentacao`. Formato
+   atual: `tasks/{taskId}-{slug}.md` (um por task, todos os repos) - nunca
+   criar `resumo/` para task que ja tem `tasks/`. Task antiga sem `tasks/`:
+   `resumo/{taskId}-{slug}.md` por task+repo; se nao existir, criar. Atualizar as
    secoes **Status atual** e **O que falta** com o que foi levantado no
    passo 5 - bullets factuais, sem prosa polida (esse doc e' fonte de
    dado pro `dashboard.html`, nao leitura direta). Gravar tambem o campo

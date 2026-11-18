@@ -55,10 +55,9 @@ No dia a dia, peça ao Claude ("cria um task-code pra essa task") — a skill
 
 ## Como funciona
 
-Cada task vira `.md` com frontmatter YAML em pastas por tipo (`task-code/`,
-`task-planning/`, `testes/`, `resumo/`, `handover-tecnico/`, `progresso/`,
-`reqs/`). O `sync-all.ps1` lê tudo e regenera `INDEX.md`, `CATALOGO.md` e o
-dashboard:
+Cada task vira **um** `.md` em `tasks/` (status, plano, testes e review no mesmo
+arquivo), com o card original verbatim em `reqs/`. O `sync-all.ps1` lê tudo e
+regenera `INDEX.md`, `CATALOGO.md` e os dados do dashboard (`dashboard-visual/data.js`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/sync-all.ps1
@@ -73,11 +72,11 @@ Tipos, status, nomenclatura e estrutura completa:
 |-------|-------|
 | `controle-documentacao` | Gate pra criar/editar qualquer doc (template, status, sync) |
 | `biblioteca-setup` | Cadastro guiado na primeira sessão |
-| `importar-historico-github` | Gera `resumo/` a partir dos seus PRs no GitHub |
+| `importar-historico-github` | Gera docs `tasks/` a partir dos seus PRs no GitHub |
 | `biblioteca-pdf-export` | Converte um doc em PDF no tema do dashboard (pra mandar pra PO/QA) |
-| `testes-manuais` | Monta e registra o roteiro de teste manual (API ou tela) no doc `testes/` da task |
+| `testes-manuais` | Monta e registra o roteiro de teste manual (API ou tela) no doc da task |
 | `mock-completo` | Garante que dado mockado pra teste local cubra o fluxo inteiro da task |
-| `delegar-task` | Analisa uma task, passa pra outro dev, acompanha PRs e registra o review (página **Time**) |
+| `delegar-task` | Analisa uma task, passa pra outro dev, acompanha PRs e registra o review (aba **Time**) |
 | `evidencia-imagem` | Monta um PNG de evidência (prints + destaques + regras) em `exportacoes/` |
 | `task-hub-resume` / `task-hub-qa` | Acionadas pelos botões do dashboard |
 

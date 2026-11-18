@@ -3,9 +3,8 @@ name: testes-manuais
 description: >-
   Monta, executa com o usuario e registra testes manuais de uma task — de API
   (Insomnia/Postman/curl) ou de tela (localhost) — na secao Testes manuais do
-  doc testes/ da Biblioteca. Use apos implementar endpoint, tela ou fluxo, ou
-  antes de entregar PR. Aciona controle-documentacao — um doc testes/ por task,
-  nunca arquivo separado.
+  doc tasks/ da task na Biblioteca. Use apos implementar endpoint, tela ou fluxo,
+  ou antes de entregar PR. Aciona controle-documentacao — nunca arquivo separado.
 ---
 
 # Testes manuais (API e tela)
@@ -23,13 +22,13 @@ description: >-
    num bloco dedicado, sozinho, na mensagem atual (`✅` pro que ja foi
    confirmado, `🟡 Pendente:` pro que falta), agrupado por REQ/criterio de
    aceite. O usuario testa a partir dessa lista no chat, nunca a partir do
-   doc da Biblioteca. Escrever ou atualizar o doc em `testes/` **antes**
+   doc da Biblioteca. Escrever ou atualizar o doc da task **antes**
    desse bloco aparecer na conversa e' a violacao mais comum deste fluxo —
    ter o roteiro pronto mentalmente nao conta como "exibido".
 2. Usuario executa (ambiente local ou o combinado) e reporta o resultado de
    cada item.
-3. Atualizar ou criar **um** doc em `testes/` da Biblioteca (tipo `testes`,
-   template `_templates/testes.md`) via `controle-documentacao` — grava o
+3. Atualizar a secao `## Testes manuais` do `tasks/{card}-{slug}.md` da task
+   (task antiga: o doc em `testes/`) via `controle-documentacao` — grava o
    resultado ja confirmado, nao a lista do que testar.
 4. Rodar `scripts/sync-all.ps1` da Biblioteca.
 5. Commit/entrega so' depois que o usuario confirmar que os testes manuais
@@ -62,6 +61,5 @@ Pre-requisito: lint e build do projeto passando antes de pedir o teste.
 
 ## Apos documentar
 
-- [ ] `related` aponta pro `task-planning/` e, se houver, `handover-tecnico/` da task
 - [ ] `sync-all.ps1`
 - [ ] `status: completed` quando a entrega fechar

@@ -7,6 +7,7 @@ if ((Split-Path $script:LibRoot -Leaf) -eq '_ferramenta') { $script:LibRoot = Sp
 
 $script:TypeLabels = @{
     'rules' = 'Regras'
+    'task' = 'Task'
     'task-code' = 'Task code'
     'task-planning' = 'Task planning'
     'testes' = 'Testes'
@@ -149,6 +150,43 @@ function Build-Badge($meta) {
     return "<!-- badge:auto -->`n$line`n<!-- /badge:auto -->"
 }
 
+# Mapa de IDs (gerado): card ancora (`task:`) + papeis do campo `ids:` +
+# PRs dos campos pr_*. Prosa do doc cita o PAPEL ("Task QA", "PR do back"),
+# nunca o numero - o numero mora so' aqui. Formato do campo (uma linha):
+#   ids: qa=118458 relacionado=118345,118346 tc-back=118147
+# Valor numerico vira link do Azure; resto sai literal. So' para doc
+# `type: task` ou com `ids:` - docs antigos nao ganham bloco novo.
+function Build-IdsBlock($meta) {
+    $typ = Clean-Field $meta['type']
+    $idsRaw = Clean-Field $meta['ids']
+    if ($typ -ne 'task' -and -not $idsRaw) { return '' }
+    if ($null -eq $script:AzureBase) { $script:AzureBase = "$((Get-BibliotecaConfig).azureOrgUrl)" }
+    $dot = " $([char]0xB7) "
+    function Format-AzId([string]$id) {
+        if ($id -match '^\d+$' -and $script:AzureBase) { return "[AZ $id]($script:AzureBase/$id)" }
+        if ($id -match '^\d+$') { return "AZ $id" }
+        return $id
+    }
+    $parts = @()
+    $task = Clean-Field $meta['task']
+    if ($task -match '^\d+$') { $parts += "Card $(Format-AzId $task)" }
+    foreach ($pair in ($idsRaw -split '\s+' | Where-Object { $_ -match '=' })) {
+        $role, $vals = $pair -split '=', 2
+        $parts += "$role " + ((($vals -split ',') | Where-Object { $_ } | ForEach-Object { Format-AzId $_ }) -join ', ')
+    }
+    $prs = @()
+    foreach ($f in @(@('pr_merged', 'mergeado'), @('pr_pending', 'aberto'), @('pr_rejected', 'fechado'))) {
+        foreach ($m in [regex]::Matches("$($meta[$f[0]])", 'https?://github\.com/[^/\s]+/([^/\s]+)/pull/(\d+)')) {
+            $prs += "[$($m.Groups[1].Value)#$($m.Groups[2].Value)]($($m.Value)) ($($f[1]))"
+        }
+    }
+    $lines = @()
+    if ($parts.Count) { $lines += "**IDs:** $($parts -join $dot)" }
+    if ($prs.Count) { $lines += "**PRs:** $($prs -join $dot)" }
+    if (-not $lines.Count) { return '' }
+    return "<!-- ids:auto -->`n$($lines -join "  `n")`n<!-- /ids:auto -->"
+}
+
 function Insert-Badge([string]$body, [string]$badge) {
     if ($body -match '(?m)^# .*$') {
         $m = [regex]::Match($body, '(?m)^# .*$')
@@ -169,8 +207,10 @@ function Build-MetadataFooter($meta) {
     $author = Clean-Field $meta['author']
     $planActive = Clean-Field $meta['plan_active']
 
-    $rows = @(
-        "| Numero | $num |"
+    # number: legado (docs ate 2026-11-17) - doc novo nao tem, linha some.
+    $rows = @()
+    if ($num) { $rows += "| Numero | $num |" }
+    $rows += @(
         "| Tipo | $label |"
         "| Task | $(Get-TaskCell $meta['task']) |"
         "| Stub | $stubCell |"
@@ -189,6 +229,7 @@ function Strip-GeneratedParts([string]$body) {
     $body = $body -replace '(?s)^\| \| \| \|\r?\n\|:--\|:--\|:--\|\r?\n.*?(?=\r?\n# |\r?\n## |\z)', ''
     # blocos marcados, podem aparecer em qualquer posicao do body
     $body = $body -replace '(?s)<!-- badge:auto -->.*?<!-- /badge:auto -->\r?\n*', ''
+    $body = $body -replace '(?s)<!-- ids:auto -->.*?<!-- /ids:auto -->\r?\n*', ''
     $body = $body -replace '(?s)<!-- related:auto -->.*?<!-- /related:auto -->\r?\n*', ''
     $body = $body -replace '(?s)<!-- meta:auto -->.*?<!-- /meta:auto -->\r?\n*', ''
     $body = $body -replace '(?s)^---\r?\n.*?\r?\n---\r?\n+', ''
@@ -226,7 +267,7 @@ function Build-RelatedSection($meta) {
 
 function Serialize-Frontmatter($meta) {
     $lines = @('---')
-    $order = @('number', 'type', 'status', 'repo', 'task', 'branch', 'function', 'titulo_busca', 'dev', 'dificuldade', 'estimativa', 'delegada_em', 'stub', 'cluster', 'pseudo_task', 'pr_pending', 'pr_merged', 'pr_rejected', 'plan_active', 'related', 'updated', 'author')
+    $order = @('number', 'type', 'status', 'repo', 'task', 'branch', 'function', 'titulo_busca', 'dev', 'dificuldade', 'estimativa', 'delegada_em', 'stub', 'cluster', 'pseudo_task', 'ids', 'pr_pending', 'pr_merged', 'pr_rejected', 'plan_active', 'related', 'updated', 'author')
     foreach ($key in $order) {
         if (-not $meta.Contains($key)) { continue }
         if ($key -eq 'related') {
@@ -269,6 +310,8 @@ function Sync-DocumentFile([string]$path) {
 
     $body = Get-ContentBody $parsed.Body
     $badge = Build-Badge $meta
+    $idsBlock = Build-IdsBlock $meta
+    if ($idsBlock) { $badge += "`n`n$idsBlock" }
     $body = Insert-Badge $body $badge
 
     $related = Build-RelatedSection $meta

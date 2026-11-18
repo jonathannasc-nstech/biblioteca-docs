@@ -1,5 +1,4 @@
 ---
-number: NN
 type: task-code
 status: draft
 repo: nome-do-seu-repo
