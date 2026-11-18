@@ -18,7 +18,7 @@ resolver com `(Get-Item "$HOME\.claude\skills\delegar-task").Target` e subir
 `_templates/delegada.md`. Pasta não existe ainda → criar (é ela que liga a
 página Time do dashboard).
 **Devs:** `delegadas/devs.json` — editado **só** pelo botão "+ Dev" do
-`time.html` (`scripts/time-dev.ps1`), nunca à mão pelo agente. O `id` de
+aba Time do dashboard (`scripts/time-dev.ps1`), nunca à mão pelo agente. O `id` de
 cada dev é o valor do campo `dev:` da delegada.
 **Config:** `biblioteca.config.json` — `reposBasePath` (onde ficam os repos),
 `defaultBranch` (branch base pra ler código; ausente → `develop`, ou `main`
@@ -59,13 +59,13 @@ escopo a partir do título. Guardar o texto **verbatim** — ele vai pra
 ### 2. Contexto que já existe na Biblioteca
 
 ```bash
-grep -rl "^task: {id}" delegadas/ resumo/ task-code/   # já foi delegada? já mexi nisso?
+grep -rl "^task: {id}" delegadas/ tasks/ resumo/ task-code/   # já foi delegada? já mexi nisso?
 ls reqs/{id}-*                                         # REQ já salvo?
 ```
 
 Já existe delegada ativa pra essa task → mostrar e perguntar se é
 reatribuição ou nova rodada, nunca criar segunda delegada da mesma task.
-`resumo/` de task parecida é ouro pra "Causa provável" — citar.
+`tasks/` (ou `resumo/` antigo) de task parecida é ouro pra "Causa provável" — citar.
 
 ### 3. Investigação de código (sem tocar no repo)
 
@@ -142,7 +142,7 @@ Perguntar por task, com opções: devs do `devs.json` (pelo `nome`) +
 2. `reqs/{id}-{slug}.md` — REQ + item técnico + `## Parent` verbatim (se
    ainda não existe).
 3. `delegadas/{id}-{slug}.md` a partir de `_templates/delegada.md`:
-   - `number:` = "Proximo numero" do `INDEX.md`
+   - Sem `number:`. Itens além do card: `ids:` por papel (`ids: tc-back=1240 parent=1200`)
    - `repo:` = todos os repos da análise, separados por espaço (único tipo
      da Biblioteca com mais de um repo nesse campo)
    - `dev:` = `id` do `devs.json`; `delegada_em:` = hoje
@@ -150,10 +150,10 @@ Perguntar por task, com opções: devs do `devs.json` (pelo `nome`) +
    - `titulo_busca:` obrigatório (3-8 palavras, assunto)
    - `related:` = `reqs/{id}-{slug}.md`
    - Corpo: tabela `## Análise` (mesmas 5 linhas, **rótulos exatos**: Tela,
-     Repo, Causa provável, Atenção, Dificuldade — o `time.html` lê por eles),
+     Repo, Causa provável, Atenção, Dificuldade — o aba Time do dashboard lê por eles),
      `## Onde mexe`, `## Escopo`, `## Delegação`, `## PRs`, `## Review`,
      `## Anotações`.
-4. **Não** criar `resumo/`, `task-code/` nem `task-planning/` pra delegada —
+4. **Não** criar `tasks/`, `resumo/`, `task-code/` nem `task-planning/` pra delegada —
    a delegada é o único doc da task do lado de quem delega.
 5. Rodar `sync-all.ps1`.
 6. Entregar no chat uma **mensagem pronta pro dev**, tom formal, sem jargão
@@ -208,7 +208,7 @@ Para cada link de PR:
 ```
 
    Veredito no título: **"Ajustes solicitados"** se houver Blocker/Convenção
-   aberto, **"Aprovado"** se nenhum (o `time.html` lê essas palavras pra cor
+   aberto, **"Aprovado"** se nenhum (o aba Time do dashboard lê essas palavras pra cor
    do card). Só Blocker/Convenção viram bullet; Nit fica no número do Resumo.
 6. PR ainda não está no doc → adicionar a URL em `## PRs` e em `pr_pending`
    (o sweep do `sync-all` fecha a delegada sozinho quando todos os PRs
@@ -234,21 +234,21 @@ normal **não** é manual — o sweep de PR fecha. Sempre `sync-all.ps1` no fim.
 **Assumida por quem delegou** ("eu peguei a X"): a task deixa de ser
 delegada e vira trabalho próprio.
 
-1. `status: superseded` (some do `time.html`; o sweep não reabre doc
+1. `status: superseded` (some do aba Time do dashboard; o sweep não reabre doc
    `superseded`/`archived`), `dev:` removido se houver.
 2. `## Anotações`: `- DD/MM: assumida por quem delegou — segue fluxo próprio, delegada substituída.`
 3. Seguir o fluxo normal do `CLAUDE.md`, reaproveitando `## Análise`/
    `## Onde mexe`. Depois de criar os docs próprios, acrescentar
-   `task-code/...` e `resumo/...` em `related:` da delegada.
+   o `tasks/...` em `related:` da delegada.
 4. **Nunca** cadastrar o próprio usuário no `devs.json` — dev cadastrado
-   vira coluna no `time.html`; o trabalho próprio aparece no dashboard
+   vira coluna no aba Time do dashboard; o trabalho próprio aparece no dashboard
    principal.
 
 ## Regras
 
 - Nunca editar código, trocar branch, commitar ou abrir PR em repo de projeto.
 - Nunca escrever no rastreador de tarefas.
-- Nunca editar `devs.json` à mão — dev novo é pelo "+ Dev" do `time.html`
+- Nunca editar `devs.json` à mão — dev novo é pelo "+ Dev" do aba Time do dashboard
   (se o usuário pedir no chat, passar o comando:
   `powershell -ExecutionPolicy Bypass -File scripts/time-dev.ps1 -NomeB64 <base64 do nome> -Github <login>`).
 - Tabela no chat **antes** de gravar qualquer arquivo; gravação só depois de

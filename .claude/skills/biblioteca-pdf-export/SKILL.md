@@ -1,6 +1,6 @@
 ---
 name: biblioteca-pdf-export
-description: Exporta documentos markdown da Biblioteca pessoal de documentação técnica (task-code/, task-planning/, testes/, handover-tecnico/, reqs/, resumo/, cada .md com frontmatter YAML: number, type, status, repo, task, author, updated, titulo_busca, function, pr_merged/pr_pending) para PDF em tema escuro, na paleta real do dashboard da Biblioteca. Use sempre que o usuário pedir para "exportar pra PDF", "gerar PDF", "converter documento da Biblioteca", "mandar handover pro PO" ou mencionar um número de task/arquivo da Biblioteca junto com PDF. Também use proativamente quando o usuário disser que vai compartilhar um `handover-tecnico` ou `testes` com alguém fora do time técnico.
+description: Exporta documentos markdown da Biblioteca pessoal de documentação técnica (tasks/, handover-tecnico/, reqs/ e os tipos antigos task-code/, task-planning/, testes/, resumo/, cada .md com frontmatter YAML: type, status, repo, task, author, updated, titulo_busca, function, pr_merged/pr_pending) para PDF em tema escuro, na paleta real do dashboard da Biblioteca. Use sempre que o usuário pedir para "exportar pra PDF", "gerar PDF", "converter documento da Biblioteca", "mandar handover pro PO" ou mencionar um número de task/arquivo da Biblioteca junto com PDF. Também use proativamente quando o usuário disser que vai compartilhar um `handover-tecnico` ou `testes` com alguém fora do time técnico.
 license: Personal use
 ---
 

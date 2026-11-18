@@ -5,14 +5,16 @@ param([switch]$Numbered)
 $root = Get-LibRoot
 $files = Get-DocumentFiles $root
 
-$typeOrder = @{ 'task-code' = 0; 'task-planning' = 1; 'testes' = 2; 'handover-tecnico' = 3 }
+$typeOrder = @{ 'task' = 0; 'task-code' = 0; 'task-planning' = 1; 'testes' = 2; 'handover-tecnico' = 3 }
 
 $pending = @()
 foreach ($f in $files) {
     $p = Parse-Frontmatter ([IO.File]::ReadAllText($f.FullName))
-    if (-not $p -or -not $p.Meta['number']) { continue }
+    if (-not $p -or -not $p.Meta['type']) { continue }
     $status = Clean-Field $(if ($p.Meta['status']) { $p.Meta['status'] } else { 'draft' })
     if ($status -notin @('draft', 'in_progress')) { continue }
+    # delegada = task de outro dev (pagina Time), nao e' trabalho meu a retomar
+    if ((Clean-Field $p.Meta['type']) -eq 'delegada') { continue }
     $task = Clean-Field $(if ($p.Meta['task']) { $p.Meta['task'] } else { 'general' })
     $pending += [PSCustomObject]@{
         Task = $task

@@ -1,0 +1,143 @@
+<!doctype html>
+<!-- Página fixa (não é mais gerada). Dados: data.js (scripts/build-dashboard.ps1).
+     Visual: assets/app.css. Montagem e interação: assets/app.js. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblioteca</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2322c55e' d='M2 4.8c1.6-.9 3.6-1.3 5.5-1.3 1.7 0 3.4.4 4.5 1v14c-1.1-.6-2.8-1-4.5-1-1.9 0-3.9.4-5.5 1.3V4.8z'/%3E%3Cpath fill='%2316a34a' d='M22 4.8c-1.6-.9-3.6-1.3-5.5-1.3-1.7 0-3.4.4-4.5 1v14c1.1-.6 2.8-1 4.5-1 1.9 0 3.9.4 5.5 1.3V4.8z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<header class="top-header">
+  <div class="hdr-row1">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#22c55e" d="M2 4.8c1.6-.9 3.6-1.3 5.5-1.3 1.7 0 3.4.4 4.5 1v14c-1.1-.6-2.8-1-4.5-1-1.9 0-3.9.4-5.5 1.3V4.8z"/><path fill="#16a34a" d="M22 4.8c-1.6-.9-3.6-1.3-5.5-1.3-1.7 0-3.4.4-4.5 1v14c1.1-.6 2.8-1 4.5-1 1.9 0 3.9.4 5.5 1.3V4.8z"/></svg>
+      <div>
+        <h1>Biblioteca</h1>
+        <p class="brand-meta" id="brand-meta"></p>
+      </div>
+    </div>
+    <div class="finder">
+      <div class="search-wrap">
+        <span class="search-icon"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg></span>
+        <input id="search" type="text" placeholder="Buscar task, repositório ou descrição" aria-label="Buscar" autocomplete="off">
+        <button type="button" class="clear-btn" id="search-clear" aria-label="Limpar busca" title="Limpar">&times;</button>
+      </div>
+      <div class="quick-repo-wrap">
+        <input type="text" id="quick-repo" role="combobox" aria-expanded="false" aria-controls="repo-pop" aria-autocomplete="list" placeholder="Repositório" aria-label="Filtrar por repositório (também é onde o Abrir Claude abre)" autocomplete="off">
+        <button type="button" class="clear-btn" id="quick-repo-clear" aria-label="Limpar repositório" title="Limpar">&times;</button>
+        <div class="repo-pop" id="repo-pop" role="listbox" aria-label="Repositórios" hidden></div>
+      </div>
+    </div>
+    <div class="lib-spine" id="spine"></div>
+  </div>
+  <div class="hdr-row2">
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <a class="tab" role="tab" href="#ativas" data-tab="ativas">Ativas <span class="tab-n" id="n-ativas">0</span></a>
+      <a class="tab" role="tab" href="#time" data-tab="time" id="tab-time">Time <span class="tab-n" id="n-time">0</span></a>
+      <a class="tab" role="tab" href="#completas" data-tab="completas">Completas <span class="tab-n" id="n-completas">0</span></a>
+    </nav>
+    <div class="hdr-actions">
+      <a class="hdr-btn claude-btn" id="quick-open-btn" href="#" title="Abre o Claude no repositório escolhido no campo ao lado">Abrir Claude</a>
+      <a class="hdr-btn primary-link" href="nova-task.html" target="_blank">+ Nova Task</a>
+      <button type="button" class="hdr-btn review-btn time-only" data-open="dlg-review" title="Cola os links de PR; o Claude revisa usando a delegada como referência">Revisar PRs</button>
+      <details class="menu time-only">
+        <summary class="hdr-btn" aria-label="Ações do time">Time <span class="count" id="time-count" hidden></span> <svg class="chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></summary>
+        <div class="menu-pop">
+          <a class="menu-item" href="#time">Ver aba Time <span class="n" id="time-count-menu"></span></a>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-item" data-open="dlg-analisar">+ Analisar tasks para delegar</button>
+          <a class="menu-item" id="sync-prs" href="#" title="Procura no GitHub PRs dos devs que citam o id de cada task ativa">Buscar PRs dos devs</a>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-item" data-open="dlg-dev">Gerenciar devs</button>
+        </div>
+      </details>
+      <details class="menu">
+        <summary class="hdr-btn" aria-label="Mais páginas">Mais <svg class="chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></summary>
+        <div class="menu-pop">
+          <a class="menu-item" href="historico-nova-task.md" target="_blank">Histórico de tasks criadas</a>
+          <div class="menu-sep"></div>
+          <a class="menu-item" href="paleta.html" target="_blank">Paleta de cores</a>
+          <a class="menu-item" href="mock/dashboard-mock.html" target="_blank">Mock</a>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tab-panel" data-panel="ativas" role="tabpanel"><div class="grid" id="grid-active"></div></section>
+  <section class="tab-panel" data-panel="time" role="tabpanel" hidden><p class="panel-meta" id="time-meta"></p><div id="team-board"></div></section>
+  <section class="tab-panel" data-panel="completas" role="tabpanel" hidden>
+    <div class="view-bar">
+      <div class="seg" role="group" aria-label="Visão">
+        <button type="button" data-view="done">Completas <span class="tab-n" id="n-view-done">0</span></button>
+        <button type="button" data-view="pend" title="Resumos que ficaram para trás: o status não reflete o que já foi feito">Pendências <span class="tab-n" id="n-view-pend">0</span></button>
+        <button type="button" data-view="archive" title="Docs superados ou antigos (_archive/)">Arquivo <span class="tab-n" id="n-view-archive">0</span></button>
+      </div>
+      <div id="pend-actions" hidden><a class="btn is-disabled" id="pend-launch" href="#" aria-disabled="true">Pedir conferência ao Claude</a></div>
+    </div>
+    <div class="table-wrap">
+      <table class="list">
+        <thead id="done-head"></thead>
+        <tbody id="done-rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <label>Mostrar <select id="page-size"><option>25</option><option>50</option><option>100</option></select></label>
+      <label>Ir para página <input id="page-num" type="number" min="1" value="1"></label>
+      <span id="page-info"></span>
+      <span class="nav"><button type="button" class="btn btn-ghost" id="page-prev">Anterior</button><button type="button" class="btn btn-ghost" id="page-next">Próxima</button></span>
+    </div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" hidden>
+  <div class="drawer-backdrop" data-close-drawer></div>
+  <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div><h2 id="drawer-title"></h2><div class="card-meta" id="drawer-meta"></div></div>
+      <button type="button" class="drawer-close" data-close-drawer aria-label="Fechar">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+</aside>
+
+<dialog class="tm-dialog" id="dlg-analisar">
+  <h2>Analisar tasks para delegar</h2>
+  <p class="hint">Um link (ou id) do Azure DevOps por linha. O Claude busca REQ, Task Code e parent, investiga o código (sem editar nada), devolve a tabela de análise e pergunta qual dev pegou cada uma.</p>
+  <label for="an-links">Tasks</label>
+  <textarea id="an-links" placeholder="https://dev.azure.com/.../_workitems/edit/111008"></textarea>
+  <label for="an-notes">Observações (opcional)</label>
+  <input type="text" id="an-notes" placeholder="ex.: já sei que vai para o dev X; PO pediu urgência" autocomplete="off">
+  <p class="warn" id="an-warn"></p>
+  <div class="tm-actions"><button type="button" class="btn btn-ghost" data-close>Cancelar</button><a class="hdr-btn claude-btn" id="an-launch" href="#">Abrir Claude</a></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-review">
+  <h2>Revisar PRs</h2>
+  <p class="hint">Cole o texto como veio: os links de PR são extraídos sozinhos. Para cada PR o Claude acha a task delegada na Biblioteca, usa a análise, o escopo e o REQ dela como referência e registra a rodada no doc da delegada.</p>
+  <label for="rv-links">PRs</label>
+  <textarea id="rv-links" placeholder="https://github.com/org/repo/pull/123"></textarea>
+  <p class="warn" id="rv-warn"></p>
+  <div class="tm-actions"><button type="button" class="btn btn-ghost" data-close>Cancelar</button><a class="hdr-btn claude-btn" id="rv-launch" href="#">Abrir Claude</a></div>
+</dialog>
+
+<dialog class="tm-dialog" id="dlg-dev">
+  <h2>Gerenciar devs</h2>
+  <p class="hint">Grava em <code>delegadas/devs.json</code> via script (sem Claude). O dashboard atualiza sozinho em até 20s.</p>
+  <label for="dev-nome">Nome</label>
+  <input type="text" id="dev-nome" placeholder="Nome Sobrenome" autocomplete="off">
+  <label for="dev-gh">Login no GitHub</label>
+  <input type="text" id="dev-gh" placeholder="login-do-github" autocomplete="off">
+  <p class="warn" id="dev-warn"></p>
+  <div class="tm-actions"><button type="button" class="btn btn-ghost" data-close>Fechar</button><a class="hdr-btn claude-btn" id="dev-launch" href="#">Adicionar</a></div>
+  <div id="dev-remove"></div>
+</dialog>
+
+<script src="data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

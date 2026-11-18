@@ -5,11 +5,8 @@ __pycache__/
 # Gerado - cada clone produz o proprio
 INDEX.md
 CATALOGO.md
-dashboard-visual/dashboard.html
-dashboard-visual/archive.html
+dashboard-visual/data.js
 dashboard-visual/paleta.html
-dashboard-visual/pendencias.html
-dashboard-visual/summaries/
 dashboard-visual/historico-nova-task.md
 scheduled_tasks.lock
 dashboard-visual/nova-task.html

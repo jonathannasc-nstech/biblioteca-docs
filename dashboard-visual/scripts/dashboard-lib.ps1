@@ -99,19 +99,6 @@ function Get-RepoSortKey([string]$repo, [string[]]$lastRepos = @(), $aliases = @
     return [PSCustomObject]@{ Bucket = 1; Domain = ''; SubOrder = 0; Name = $repo }
 }
 
-# Pedacos de HTML compartilhados pelas 3 funcoes que montam um card
-# (Build-Card, Build-QaRoundCard, Build-UnifiedQaRoundCard, em
-# build-dashboard.ps1) - cabecalho/subtitulos/rodape sao IDENTICOS nos 3
-# tipos de card, so' o conteudo do meio muda (chips normais vs campos de
-# QA). Antes cada funcao escrevia esse HTML na mao, em 3 copias
-# independentes - foi assim que o titulo_busca ficou faltando no card de
-# QA (2026-09-10) ate o usuario notar, e o botao de expandir precisou de
-# find-and-replace em 3 lugares pra mudar de posicao. Qualquer ajuste
-# visual de cabecalho/subtitulos/rodape entra AQUI, nunca direto dentro
-# de Build-Card/Build-QaRoundCard/Build-UnifiedQaRoundCard - se um dia
-# precisar de mais um tipo de card, ele tambem chama essas 3 funcoes, nao
-# escreve o HTML de novo.
-
 # --- Delegadas (pagina time.html) ---------------------------------------
 # Valor de uma linha `| Campo | valor |` da tabela "Analise" de um doc
 # `delegada` - casa pelo prefixo ASCII do rotulo (Tela/Causa/Aten), nunca
@@ -142,40 +129,4 @@ function Get-DelegadaReview([string]$body) {
         Resumo  = if ($resumo.Success) { $resumo.Groups[1].Value.Trim() } else { '' }
         Verdict = $verdict
     }
-}
-
-function Get-CardHeadHtml([string]$title, [string]$rightIconsHtml) {
-    return @"
-  <div class="card-head">
-    <div class="card-head-left">
-      <span class="card-title" title="$(Esc $title)">$(Esc $title)</span>
-    </div>
-    <div class="card-head-right">
-      $rightIconsHtml
-    </div>
-  </div>
-"@
-}
-
-# $label = o "titulo antigo" (Task NNN - Layer, ou o label de QA#N) -
-# $showLabel controla se ele aparece como subtitulo (so' quando o card
-# tem titulo_busca preenchido, senao seria a mesma linha repetida 2x).
-function Get-CardSubtitlesHtml([string]$label, [bool]$showLabel, [string]$repo) {
-    $labelHtml = if ($showLabel) { "<div class=`"subtitle-line`"><span class=`"task-id`" title=`"$(Esc $label)`">$(Esc $label)</span></div>" } else { '' }
-    return @"
-  <div class="subtitles">
-    $labelHtml
-    <div class="repo-line"><span class="repo" title="$(Esc $repo)">$(Esc $repo)</span></div>
-  </div>
-"@
-}
-
-function Get-CardFootHtml([string]$updatedHtml, [string]$btnsHtml, [string]$chevronIcon) {
-    return @"
-  <div class="card-foot">
-    $updatedHtml
-    $btnsHtml
-    <button class="expand-btn" type="button" title="Expandir" aria-label="Expandir">$chevronIcon</button>
-  </div>
-"@
 }

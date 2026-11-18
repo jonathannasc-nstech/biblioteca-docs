@@ -55,5 +55,5 @@ inteiro de novo — não deixar a cobertura regredir pra parcial.
 Marcar o mock com um comentário amarrado a uma condição de remoção clara
 (ex.: "remover quando PR #NNN mergear"). Remover o mock por completo quando
 a condição for satisfeita — não deixar comentado/parcial, não ficar
-remendando indefinidamente. Se a task tem `progresso/` ou `resumo/` na
+remendando indefinidamente. Se a task tem `progresso/` ou `tasks/` na
 Biblioteca, anotar lá que existe mock pendente de remoção.

@@ -1,13 +1,11 @@
-# Backfill de resumo/ a partir do historico de Pull Requests do usuario
+# Backfill de tasks/ a partir do historico de Pull Requests do usuario
 # no GitHub - pra um usuario novo da Biblioteca (que ja resolveu tasks
 # antes de existir a Biblioteca) comecar com um dashboard minimamente
-# populado, sem precisar reescrever task-code/planning/testes de tudo.
-#
-# So' gera `resumo` (status/PR links) - e' o suficiente pro dashboard
-# mostrar cards de verdade com pill de PR colorido. Sem dry-run (decisao
-# do usuario): aplica direto, pula grupos (task+repo ou cluster+repo) que
-# ja tem resumo. Sem ferramenta de limpeza pra entrada errada/duplicada
-# ainda (fora de escopo, ver plano) - usuario esta ciente.
+# populado. Gera um doc `type: task` minimo por grupo (PRs nos campos pr_*,
+# assunto de cada PR em "O que foi implementado"). Desde 2026-11-17 grava
+# em tasks/ (antes era resumo/). Sem dry-run (decisao do usuario): aplica
+# direto, pula grupos que ja tem doc (tasks/ ou resumo/ legado) ou cujo PR
+# ja aparece em qualquer doc da Biblioteca.
 param(
     [string]$Org,
     [int]$Limit = 500
@@ -112,15 +110,6 @@ foreach ($pr in $allPrs) {
 
 Write-Host "backfill-github-prs: $($taskGroups.Count) grupo(s) por numero de task, $($scopeGroups.Count) grupo(s) por scope (fallback), $($titleGroups.Count) grupo(s) avulso(s) por titulo (fallback)."
 
-# Mesma convencao de classificacao de repo usada em Get-PrKindInfo/
-# Get-LayerStatusHtml (build-dashboard.ps1) - migrations/tooling cai em
-# backend por padrao, mesmo lugar onde resumo de migration ja vive hoje.
-function Get-RepoLayer([string]$repo) {
-    if ($repo -match '-backend$') { return 'backend' }
-    if ($repo -match '^([^-]+-)?(mfe|mobile)-') { return 'frontend' }
-    return 'backend'
-}
-
 function Get-Slug([string]$text) {
     $slug = $text.ToLowerInvariant()
     $slug = $slug -replace '[^a-z0-9]+', '-'
@@ -132,14 +121,22 @@ function Get-Slug([string]$text) {
 
 # Ja existe resumo pra essa task+repo? Mesmo grep documentado em
 # controle-documentacao - nao sobrescreve resumo real nem backfill anterior.
+# Desde 2026-11-17 o backfill grava `tasks/` (formato atual, um doc por card);
+# a checagem olha tasks/ e o legado resumo/.
+function Get-TaskDocFiles() {
+    foreach ($dir in @('tasks', 'resumo')) {
+        $d = Join-Path $root $dir
+        if (Test-Path $d) { Get-ChildItem -Path $d -Recurse -Filter '*.md' -ErrorAction SilentlyContinue }
+    }
+}
+
 function Test-ResumoExists([string]$taskId, [string]$repo) {
-    $resumoDir = Join-Path $root 'resumo'
-    if (-not (Test-Path $resumoDir)) { return $false }
-    $files = Get-ChildItem -Path $resumoDir -Recurse -Filter '*.md' -ErrorAction SilentlyContinue
+    $files = @(Get-TaskDocFiles)
     foreach ($f in $files) {
         $raw = [IO.File]::ReadAllText($f.FullName)
         $p = Parse-Frontmatter $raw
-        if ($p -and (Clean-Field $p.Meta['task']) -eq $taskId -and (Clean-Field $p.Meta['repo']) -eq $repo) { return $true }
+        # tasks/ e' um doc por card (repo: lista varios) - basta o card bater
+        if ($p -and (Clean-Field $p.Meta['task']) -eq $taskId -and ((Clean-Field $p.Meta['type']) -eq 'task' -or (Clean-Field $p.Meta['repo']) -eq $repo)) { return $true }
     }
     return $false
 }
@@ -147,9 +144,7 @@ function Test-ResumoExists([string]$taskId, [string]$repo) {
 # Equivalente pra grupos `task: general` - mesmo grep de `cluster:`+`repo:`
 # ja documentado em controle-documentacao pra esse caso.
 function Test-ResumoExistsCluster([string]$cluster, [string]$repo) {
-    $resumoDir = Join-Path $root 'resumo'
-    if (-not (Test-Path $resumoDir)) { return $false }
-    $files = Get-ChildItem -Path $resumoDir -Recurse -Filter '*.md' -ErrorAction SilentlyContinue
+    $files = @(Get-TaskDocFiles)
     foreach ($f in $files) {
         $raw = [IO.File]::ReadAllText($f.FullName)
         $p = Parse-Frontmatter $raw
@@ -190,7 +185,6 @@ function Get-ExistingPrUrls([string]$root) {
 $allDocs = Get-DocumentFiles $root
 $existingPrUrls = Get-ExistingPrUrls $root
 Write-Host "backfill-github-prs: $($existingPrUrls.Count) URL(s) de PR ja referenciadas na Biblioteca (qualquer doc)."
-$script:nextNumber = Get-NextNumber $allDocs
 $created = 0
 $skipped = 0
 $today = Get-Date -Format 'yyyy-MM-dd'
@@ -204,7 +198,6 @@ function Write-BackfillResumo([PSCustomObject]$group) {
     $alreadyExists = if ($group.Cluster) { Test-ResumoExistsCluster $group.Cluster $group.Repo } else { Test-ResumoExists $group.Task $group.Repo }
     if ($alreadyExists) { return $false }
 
-    $layer = Get-RepoLayer $group.Repo
     $prsSorted = @($group.Prs | Sort-Object Number -Descending)
     $latestSubject = $prsSorted[0].Subject
     $slugSource = if ($group.Cluster) { $group.Cluster } else { $latestSubject }
@@ -224,19 +217,17 @@ function Write-BackfillResumo([PSCustomObject]$group) {
     $mergedUrls = @($group.Prs | Where-Object { $_.State -eq 'merged' } | ForEach-Object { $_.Url })
     $openUrls = @($group.Prs | Where-Object { $_.State -eq 'open' } | ForEach-Object { $_.Url })
 
-    $prLines = ($prsSorted | ForEach-Object {
-        $stateLabel = if ($_.State -eq 'merged') { 'mergeado' } else { 'aberto' }
-        "- [$($group.Repo)#$($_.Number)]($($_.Url)) $($script:EmDash) $stateLabel $($script:EmDash) $($_.Subject)"
-    }) -join "`n"
+    # PRs vao so' nos campos pr_* (o sync gera o bloco IDs/PRs); no corpo, so'
+    # o assunto de cada um - sem URL (regra de IDs de 2026-11-17).
+    $prLines = ($prsSorted | ForEach-Object { "- $($_.Subject)" }) -join "`n"
 
     $meta = [ordered]@{
-        number   = "$script:nextNumber"
-        type     = 'resumo'
+        type     = 'task'
         status   = $status
         repo     = $group.Repo
         task     = $group.Task
         function = $latestSubject
-        stub     = [char]0x2014
+        titulo_busca = $latestSubject
     }
     if ($group.Cluster) { $meta['cluster'] = $group.Cluster }
     if ($mergedUrls.Count -gt 0) { $meta['pr_merged'] = ($mergedUrls -join ' ') }
@@ -249,20 +240,16 @@ function Write-BackfillResumo([PSCustomObject]$group) {
     $clusterNote = if ($groupedByLabel) { "sem numero de task formal no titulo da PR - agrupado por $groupedByLabel, " } else { '' }
 
     $body = @"
-# Resumo $($script:EmDash) $titleSuffix
+# $titleSuffix
 
 ## Status atual
 
-Gerado automaticamente a partir do historico de Pull Requests no GitHub
-(backfill inicial, $($clusterNote)sem task-code/planning detalhado) - $($group.Prs.Count) PR(s):
-
-$prLines
+- Gerado automaticamente do historico de Pull Requests no GitHub ($($clusterNote)$($group.Prs.Count) PR(s), links no bloco de PRs acima).
+- Sem plano nem testes registrados.
 
 ## O que foi implementado
 
-- Nao documentado - backfill automatico, sem acesso ao contexto da
-  mudanca alem do titulo da PR. Complementar manualmente se for revisar
-  essa task.
+$prLines
 
 ## REQs seguidas
 
@@ -274,7 +261,7 @@ $prLines
 "@
 
     $fileName = "$($group.Task)-$slug.md"
-    $destDir = Join-Path $root "resumo\$layer"
+    $destDir = Join-Path $root 'tasks'
     New-Item -ItemType Directory -Force -Path $destDir | Out-Null
     $destPath = Join-Path $destDir $fileName
 
@@ -297,8 +284,7 @@ $prLines
     [IO.File]::WriteAllText($destPath, (Serialize-Frontmatter $meta) + $body)
     Sync-DocumentFile $destPath | Out-Null
 
-    Write-Host "  criado: resumo/$layer/$fileName ($($group.Repo), $status)"
-    $script:nextNumber++
+    Write-Host "  criado: tasks/$fileName ($($group.Repo), $status)"
     return $true
 }
 
@@ -312,7 +298,7 @@ foreach ($key in $titleGroups.Keys) {
     if (Write-BackfillResumo $titleGroups[$key]) { $created++ } else { $skipped++ }
 }
 
-Write-Host "backfill-github-prs: $created resumo(s) criado(s), $skipped pulado(s) (ja existia)."
+Write-Host "backfill-github-prs: $created task(s) criada(s), $skipped pulado(s) (ja existia)."
 
 if ($created -gt 0) {
     Write-Host "backfill-github-prs: rodando sync-all.ps1..."

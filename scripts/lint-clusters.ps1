@@ -19,7 +19,7 @@ $allDocs = @()
 foreach ($d in $parsedDocs) {
     $f = $d.File
     $p = $d.Parsed
-    if (-not $p -or -not $p.Meta['number']) { continue }
+    if (-not $p -or -not $p.Meta['type']) { continue }
     $task = Clean-Field $(if ($p.Meta['task']) { $p.Meta['task'] } else { 'general' })
     $rel = $f.FullName.Substring($root.Length + 1) -replace '\\', '/'
     $allDocs += [PSCustomObject]@{
@@ -30,6 +30,8 @@ foreach ($d in $parsedDocs) {
         Type    = Clean-Field $p.Meta['type']
         Repo    = Clean-Field $p.Meta['repo']
         Status  = Clean-Field $p.Meta['status']
+        Updated = Clean-Field $p.Meta['updated']
+        Body    = $p.Body
     }
 }
 # Checks (a)/(b)/(c) abaixo sao especificas de task: general - checks (d)
@@ -101,6 +103,17 @@ foreach ($d in $allDocs) {
             $warnings += "$($d.Path) - related quebrado, arquivo nao existe: $r"
         }
     }
+}
+
+# (e) notacao de ID (convencao de 2026-11-17): work item e' `AZ 118403`,
+# PR e' `repo#558`. `#118403` solto confunde Azure com PR. So' docs
+# tocados a partir da convencao - historico nao e' reescrito.
+foreach ($d in $allDocs) {
+    if ($d.Updated -lt '2026-11-17') { continue }
+    # codigo inline (`#118403`) e' exemplo/citacao da propria regra, nao uso
+    $clean = (Strip-GeneratedParts $d.Body) -replace '`[^`\r\n]*`', ''
+    $hits = @([regex]::Matches($clean, '(?<![\w/-])#1\d{5}\b') | ForEach-Object { $_.Value } | Select-Object -Unique)
+    if ($hits.Count) { $warnings += "$($d.Path) - work item com '#' ($($hits -join ', ')); usar 'AZ NNNNNN'" }
 }
 
 if ($warnings.Count -gt 0) {
